@@ -1,6 +1,6 @@
 {
   "name": "@contentgrid/uri-template",
-  "version": "0.0.1",
+  "version": "0.0.1-alpha.0",
   "description": "",
   "type": "module",
   "main": "build/index.js",
