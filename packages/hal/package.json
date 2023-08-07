@@ -2,15 +2,29 @@
   "name": "@contentgrid/hal",
   "version": "0.0.1",
   "description": "",
-  "module": "build/esm/index.js",
-  "main": "build/cjs/index.js",
-  "types": "build/types/index.d.ts",
+  "type": "module",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "default": "./build/index.js"
+    },
+    "./curies": {
+      "types": "./build/curies/index.d.ts",
+      "default": "./build/curies/index.js"
+    },
+    "./rels": {
+      "types": "./build/rels/index.d.ts",
+      "default": "./build/rels/index.js"
+    }
+  },
   "license": "MIT",
   "dependencies": {
     "@contentgrid/uri-template": "*"
   },
   "scripts": {
-    "prepublishOnly": "tsc -b ./tsconfig.cjs.json ./tsconfig.mjs.json ./tsconfig.types.json",
+    "prepublishOnly": "tsc -b ./tsconfig.json",
     "test": "jest"
   },
   "devDependencies": {

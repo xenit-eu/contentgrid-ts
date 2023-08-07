@@ -1,5 +1,5 @@
-import LinkRelation from "./LinkRelation";
-import createRelations from "./createRelations";
+import LinkRelation from "./LinkRelation.js";
+import createRelations from "./createRelations.js";
 
 const ianaRelationNames = [
     "about",

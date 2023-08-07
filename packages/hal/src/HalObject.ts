@@ -1,8 +1,8 @@
-import HalEmbedded, { HalEmbeddedShape } from "./HalEmbedded";
-import Link from "./Link";
-import Links, { LinksShape } from "./Links";
-import { CurieRegistry } from "./curies";
-import { ianaRelations } from "./rels";
+import HalEmbedded, { HalEmbeddedShape } from "./HalEmbedded.js";
+import Link from "./Link.js";
+import Links, { LinksShape } from "./Links.js";
+import { CurieRegistry } from "./curies/index.js";
+import { ianaRelations } from "./rels/index.js";
 
 export default class HalObject<T> {
     public readonly links: Links;

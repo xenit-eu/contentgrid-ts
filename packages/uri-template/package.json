@@ -2,17 +2,22 @@
   "name": "@contentgrid/uri-template",
   "version": "0.0.1",
   "description": "",
-  "module": "build/esm/index.js",
-  "main": "build/cjs/index.js",
-  "types": "build/types/index.d.ts",
+  "type": "module",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
   "license": "MIT",
   "dependencies": {
     "@types/uri-templates": "^0.1.31",
     "uri-templates": "^0.2.0"
   },
   "scripts": {
-    "prepublishOnly": "tsc -b ./tsconfig.cjs.json ./tsconfig.mjs.json ./tsconfig.types.json",
+    "prepublishOnly": "tsc -b ./tsconfig.json",
     "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xenit-eu/contentgrid-ts",
+    "directory": "packages/uri-template"
   },
   "devDependencies": {
     "@jest/globals": "^29.6.2",

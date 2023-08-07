@@ -1,9 +1,9 @@
 import UriTemplate from "@contentgrid/uri-template";
-import LinkRelation, { PlainLinkRelation } from "../rels/LinkRelation";
-import Curie from "./Curie";
-import { CuriedLinkRelation } from "./CuriedLinkRelation";
-import HalError from "../HalError";
-import Links from "../Links";
+import LinkRelation, { PlainLinkRelation } from "../rels/LinkRelation.js";
+import Curie from "./Curie.js";
+import { CuriedLinkRelation } from "./CuriedLinkRelation.js";
+import HalError from "../HalError.js";
+import Links from "../Links.js";
 
  interface CurieRegistry {
     resolve(curie: Curie): LinkRelation;

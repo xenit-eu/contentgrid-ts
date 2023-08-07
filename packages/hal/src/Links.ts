@@ -1,7 +1,7 @@
-import Link, { LinkShape } from "./Link"
-import LinkRelation, { LinkRelationShape, PlainLinkRelation } from "./rels/LinkRelation"
-import { Curie, CurieRegistry } from "./curies"
-import HalError from "./HalError";
+import Link, { LinkShape } from "./Link.js"
+import LinkRelation, { LinkRelationShape, PlainLinkRelation } from "./rels/LinkRelation.js"
+import { Curie, CurieRegistry } from "./curies/index.js"
+import HalError from "./HalError.js";
 
 export default class Links {
     // @internal
