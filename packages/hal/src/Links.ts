@@ -34,7 +34,7 @@ export default class Links {
             case 0:
                 throw new HalError(`No links for '${relation.value}'`);
             case 1:
-                return links[0];
+                return links[0]!;
             default:
                 throw new HalError(`Too many links for '${relation.value}`)
         }

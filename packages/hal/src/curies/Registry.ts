@@ -40,7 +40,7 @@ export default CurieRegistry
 export class DefaultCurieRegistry implements CurieRegistry {
     public constructor(private readonly curies: Readonly<Record<string, UriTemplate>>) {
         for(const curie in curies) {
-            if(curies[curie].variables.length !== 1) {
+            if(curies[curie]!.variables.length !== 1) {
                 throw new HalError(`Template for prefix '${curie}' does not contain exactly one variable.`)
             }
         }
@@ -55,7 +55,7 @@ export class DefaultCurieRegistry implements CurieRegistry {
         const value = relation.canonical;
 
         for(const curie in this.curies) {
-            const match = this.curies[curie].match(value);
+            const match = this.curies[curie]!.match(value);
             if(match) {
                 const localPart = extractSingleMatchValue(match);
                 if(localPart) {
@@ -72,7 +72,7 @@ function extractSingleMatchValue(match: { [x: string]: string | Record<string, s
         const val = match[key];
         if(typeof val === "string") {
             return val;
-        } else {
+        } else if(val !== undefined) {
             return extractSingleMatchValue(val);
         }
     }
