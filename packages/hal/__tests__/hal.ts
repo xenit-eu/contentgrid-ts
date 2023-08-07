@@ -3,7 +3,7 @@ import { describe, test, expect } from "@jest/globals";
 import HalObject from "../src/HalObject";
 import Links from "../src/Links";
 import UriTemplate from "@contentgrid/uri-template";
-import { createRelations } from "../src/rels";
+import { createRelations, ianaRelations } from "../src/rels";
 
 const dataTemplate = new UriTemplate("http://example.com/rels/data/{rel}");
 const dataRels = createRelations(dataTemplate, ["rel1", "rel2", "rel3"] as const);
@@ -34,8 +34,8 @@ describe("HalObject", () => {
         })
 
         test("embeddeds are empty", () => {
-            const embeddeds = object.embedded.findEmbeddeds(dataRels.rel1);
-            expect(embeddeds.length).toBe(0)
+            expect(object.embedded.rels.length).toBe(0);
+            expect(object.embedded.findEmbeddeds(dataRels.rel1).length).toBe(0)
         })
     })
 
@@ -108,6 +108,11 @@ describe("HalObject", () => {
             expect(object.data.field1).toEqual("abc")
         })
 
+        test("embedded object knows its rels", () => {
+            const rels = object.embedded.rels.map(r => r.canonical);
+            expect(rels).toEqual([dataRels.rel1.canonical, dataRels.rel2.canonical]);
+        })
+
         test("embedded object is readable", () => {
             const embeddeds = object.embedded.findEmbeddeds(dataRels.rel1);
             expect(embeddeds.length).toEqual(1);
@@ -171,6 +176,14 @@ describe("Links", () => {
             }
         ]
     });
+    test("#rels", () => {
+        expect(links.rels.map(rel => rel.canonical)).toEqual([
+            ianaRelations.self.canonical,
+            dataRels.rel1.canonical,
+            modelRels.relations.canonical
+        ]);
+    })
+
     describe("#findLink()", () => {
         test("with a single link", () => {
             const link = links.findLink(dataRels.rel1);
@@ -285,10 +298,5 @@ describe("Links", () => {
             expect(() => links.requireSingleLink(modelRels.relations, "rel3")).toThrowErrorMatchingInlineSnapshot(`"No links for 'http://example.com/rels/model/relations'"`);
         })
     })
-
-})
-
-describe("HalEmbedded", () => {
-
 
 })

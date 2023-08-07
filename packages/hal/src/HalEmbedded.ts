@@ -1,6 +1,6 @@
 import HalObject, { HalObjectShape } from "./HalObject"
 import LinkRelation, { LinkRelationShape } from "./rels/LinkRelation"
-import Links, { LinksShape, findByRelation } from "./Links"
+import Links, { LinksShape, findByRelation, findRels } from "./Links"
 import { CurieRegistry } from "./curies";
 
 export default class HalEmbedded {
@@ -21,6 +21,13 @@ export default class HalEmbedded {
         } else {
             return [new HalObject(value, this.curieRegistry)];
         }
+    }
+
+    public get rels(): readonly LinkRelation[] {
+        if(this.data._embedded === undefined) {
+            return [];
+        }
+        return findRels(this.data._embedded, this.curieRegistry);
     }
 }
 

@@ -1,6 +1,6 @@
 import Link, { LinkShape } from "./Link"
-import LinkRelation, { LinkRelationShape } from "./rels/LinkRelation"
-import { CurieRegistry } from "./curies"
+import LinkRelation, { LinkRelationShape, PlainLinkRelation } from "./rels/LinkRelation"
+import { Curie, CurieRegistry } from "./curies"
 import HalError from "./HalError";
 
 export default class Links {
@@ -8,6 +8,10 @@ export default class Links {
     public readonly curieRegistry: CurieRegistry;
     public constructor(private readonly links: LinksShape, curieRegistry?: CurieRegistry) {
         this.curieRegistry = curieRegistry ?? CurieRegistry.fromLinks(this);
+    }
+
+    public get rels(): LinkRelation[] {
+        return findRels(this.links, this.curieRegistry);
     }
 
     public findLink(relation: LinkRelation, name: string | null = null): Link | null {
@@ -52,15 +56,33 @@ function linksAsArray(relation: LinkRelation, shape: LinkShape | LinkShape[]): L
 }
 
 export function findByRelation<T>(object: Partial<{ [k: LinkRelationShape]: T }>, relation: LinkRelation, curieRegistry?: CurieRegistry): T | undefined {
-        let data = object[relation.canonical]
-        if(data === undefined && curieRegistry) {
-            const curie = curieRegistry.compact(relation);
-            if(curie) {
-                data = object[curie.toString()]
-                if(data === undefined) {
-                    data = object[curie.toSafeString()]
-                }
+    let data = object[relation.canonical]
+    if (data === undefined && curieRegistry) {
+        const curie = curieRegistry.compact(relation);
+        if (curie) {
+            data = object[curie.toString()]
+            if (data === undefined) {
+                data = object[curie.toSafeString()]
             }
         }
-        return data;
+    }
+    return data;
+}
+
+export function findRels(object: Partial<{[k: LinkRelationShape]: any }>, curieRegistry?: CurieRegistry): LinkRelation[] {
+    const rels: LinkRelation[] = [];
+    for(const relName of Object.keys(object)) {
+        // Do not expose the "curies" relation at all
+        if(relName === "curies") {
+            continue;
+        }
+        let relation: LinkRelation = new PlainLinkRelation(relName);
+        const curie = Curie.parse(relName);
+        if(curie && curieRegistry) {
+            relation = curieRegistry.resolve(curie);
+        }
+        rels.push(relation);
+    }
+
+    return rels;
 }
