@@ -1,5 +1,5 @@
 import { test, expect, describe } from "@jest/globals"
-import UriTemplate from "../index"
+import UriTemplate from "../src/index"
 
 describe('URI template with multiple variables', () => {
     var template = new UriTemplate("/abc/{var1}{?var2,var3}");
