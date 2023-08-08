@@ -4,6 +4,7 @@ import HalObject from "../src/HalObject";
 import Links from "../src/Links";
 import UriTemplate from "@contentgrid/uri-template";
 import { createRelations, ianaRelations } from "../src/rels";
+import HalSlice from "../src/HalSlice";
 
 const dataTemplate = new UriTemplate("http://example.com/rels/data/{rel}");
 const dataRels = createRelations(dataTemplate, ["rel1", "rel2", "rel3"] as const);
@@ -297,6 +298,64 @@ describe("Links", () => {
         test("with a multi-value link and non-matching name filter", () => {
             expect(() => links.requireSingleLink(modelRels.relations, "rel3")).toThrowErrorMatchingInlineSnapshot(`"No links for 'http://example.com/rels/model/relations'"`);
         })
+    })
+
+})
+
+describe("HalSlice", () => {
+    const object = new HalObject({
+        _embedded: {
+            ["d:rel2"]: [
+                {
+                    name: "Nested item 1",
+                    _links: {
+                        self: {
+                            href: "http://example.com/items/5"
+                        }
+                    }
+                },
+                {
+                    name: "Nested item 2",
+                    _links: {
+                        self: {
+                            href: "http://example.com/items/6"
+                        }
+                    }
+                }
+            ]
+        },
+        _links: {
+            first: {
+                href: "http://example.com/items"
+            },
+            next: {
+                href: "http://example.com/items?page=2"
+            },
+            curies: [
+                {
+                    href: dataTemplate.template,
+                    templated: true,
+                    name: "d"
+                }
+            ]
+        }
+    });
+    test("#from()", () => {
+        const slice = HalSlice.from(object);
+
+        expect(slice.first).not.toBeNull();
+        expect(slice.first?.href).toEqual("http://example.com/items");
+
+        expect(slice.next).not.toBeNull();
+        expect(slice.next?.href).toEqual("http://example.com/items?page=2");
+
+        expect(slice.previous).toBeNull();
+    })
+
+    test("items", () => {
+        const slice = new HalSlice(object.data);
+
+        expect(slice.items.length).toEqual(2);
     })
 
 })
