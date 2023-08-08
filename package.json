@@ -5,6 +5,7 @@
     "packages/*"
   ],
   "scripts": {
+    "pretest": "lerna exec yarn prepare",
     "test": "lerna exec yarn test"
   },
   "dependencies": {},
