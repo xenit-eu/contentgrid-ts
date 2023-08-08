@@ -1,5 +1,5 @@
 import type { HalObjectShape } from "@contentgrid/hal/shape";
-import type { RequestSpec } from "@contentgrid/typed-request";
+import type { TypedRequest } from "@contentgrid/typed-request";
 
 declare const _requestType: unique symbol;
 
@@ -7,11 +7,10 @@ export interface HalFormsTemplateShape<BodyType = unknown, ResponseType = unknow
     readonly method: string;
     readonly target?: string;
     readonly properties: readonly HalFormsPropertyShape[];
-    readonly [_requestType]?: RequestSpec<BodyType, ResponseType>;
+    readonly [_requestType]?: TypedRequest<BodyType, ResponseType>;
 }
 
-// @internal
-export type TemplateRequestSpec<T extends HalFormsTemplateShape<any, any>> = Exclude<T[typeof _requestType], undefined>;
+export type TemplateTypedRequest<T extends HalFormsTemplateShape<any, any>> = Exclude<T[typeof _requestType], undefined>;
 
 export enum HalFormsPropertyType {
     hidden = "hidden",

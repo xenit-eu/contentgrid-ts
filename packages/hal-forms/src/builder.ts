@@ -1,14 +1,14 @@
 import { HalFormsProperty, HalFormsPropertyOption, HalFormsTemplate} from "./api";
 import { MATCH_ANYTHING, MATCH_NOTHING } from "./_internal";
-import { RequestSpec } from "@contentgrid/typed-request";
+import { TypedRequest } from "@contentgrid/typed-request";
 
 export class HalFormsTemplateBuilder<Body, Response> implements HalFormsTemplate<Body, Response> {
 
-    private constructor(public readonly request: RequestSpec<Body, Response>, public readonly properties: HalFormsProperty[] = []) {
+    private constructor(public readonly request: TypedRequest<Body, Response>, public readonly properties: HalFormsProperty[] = []) {
 
     }
 
-    public static from<B, R>(request: RequestSpec<B, R>): HalFormsTemplateBuilder<B, R> {
+    public static from<B, R>(request: TypedRequest<B, R>): HalFormsTemplateBuilder<B, R> {
         return new HalFormsTemplateBuilder(request);
     }
 
@@ -102,5 +102,5 @@ export class HalFormsPropertyBuilder implements HalFormsProperty {
 }
 
 export default function buildTemplate<B, R>(method: string, url: string): HalFormsTemplateBuilder<B, R> {
-    return HalFormsTemplateBuilder.from({ method, url } as RequestSpec<B, R>)
+    return HalFormsTemplateBuilder.from({ method, url } as TypedRequest<B, R>)
 }
