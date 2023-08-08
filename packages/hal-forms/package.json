@@ -1,5 +1,5 @@
 {
-  "name": "@contentgrid/hal",
+  "name": "@contentgrid/hal-forms",
   "version": "0.0.1-alpha.0",
   "description": "",
   "main": "./build/index.js",
@@ -11,26 +11,22 @@
       "import": "./build/index.mjs",
       "default": "./build/index.js"
     },
-    "./curies": {
-      "types": "./build/curies/index.d.ts",
-      "import": "./build/curies/index.mjs",
-      "default": "./build/curies/index.js"
-    },
-    "./rels": {
-      "types": "./build/rels/index.d.ts",
-      "import": "./build/rels/index.mjs",
-      "default": "./build/rels/index.js"
+    "./builder": {
+      "types": "./build/builder.d.ts",
+      "import": "./build/builder.mjs",
+      "default": "./build/builder.js"
     },
     "./shape": {
-      "types": "./build/shape/index.d.ts",
-      "import": "./build/shape/index.mjs",
-      "default": "./build/shape/index.js"
+      "types": "./build/shape.d.ts",
+      "import": "./build/shape.mjs",
+      "default": "./build/shape.js"
     }
   },
   "license": "MIT",
   "dependencies": {
+    "@contentgrid/typed-request": "^0.0.1-alpha.0",
+    "@contentgrid/hal": "^0.0.1-alpha.0",
     "@babel/runtime": "^7.22.10",
-    "@contentgrid/uri-template": "^0.0.1-alpha.0",
     "tslib": "^2.6.1"
   },
   "scripts": {

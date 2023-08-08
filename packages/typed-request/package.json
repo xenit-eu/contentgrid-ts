@@ -1,0 +1,35 @@
+{
+  "name": "@contentgrid/typed-request",
+  "version": "0.0.1-alpha.0",
+  "description": "Add typing information to HTTP requests",
+  "main": "./build/index.js",
+  "module": "./build/index.mjs",
+  "types": "./build/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "import": "./build/index.mjs",
+      "default": "./build/index.js"
+    }
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@babel/runtime": "^7.22.10",
+    "tslib": "^2.6.1"
+  },
+  "scripts": {
+    "prepare": "rollup -c",
+    "test": "jest --passWithNoTests"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "build"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xenit-eu/contentgrid-ts.git",
+    "directory": "packages/typed-request"
+  }
+}

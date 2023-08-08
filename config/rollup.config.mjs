@@ -4,7 +4,6 @@ import glob from 'glob';
 import path from 'node:path';
 
 const sourcePath = path.resolve(process.cwd() + '/src');
-console.log(sourcePath);
 
 /** @type {import('rollup').RollupOptions} */
 export default {
