@@ -16,6 +16,6 @@ describe("createRelations", () => {
 
         expect(Object.keys(rels)).toEqual(["test1", "test2"]);
 
-        expect(rels.test1).toEqual(new PlainLinkRelation("http://example.com/rels/test1"));
+        expect(rels["test1"]).toEqual(new PlainLinkRelation("http://example.com/rels/test1"));
     })
 })

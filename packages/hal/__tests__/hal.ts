@@ -117,22 +117,22 @@ describe("HalObject", () => {
             const embeddeds = object.embedded.findEmbeddeds(dataRels.rel1);
             expect(embeddeds.length).toEqual(1);
             expect(embeddeds[0]).toBeInstanceOf(HalObject);
-            expect(embeddeds[0].self.href).toEqual("http://example.com/items/5")
+            expect(embeddeds[0]!.self.href).toEqual("http://example.com/items/5")
         })
 
         test("multiple embedded objects are readable", () => {
             const embeddeds = object.embedded.findEmbeddeds(dataRels.rel2);
             expect(embeddeds.length).toEqual(2);
             expect(embeddeds[0]).toBeInstanceOf(HalObject);
-            expect(embeddeds[0].self.href).toEqual("http://example.com/items/5")
+            expect(embeddeds[0]!.self.href).toEqual("http://example.com/items/5")
             expect(embeddeds[1]).toBeInstanceOf(HalObject);
-            expect(embeddeds[1].self.href).toEqual("http://example.com/items/6")
+            expect(embeddeds[1]!.self.href).toEqual("http://example.com/items/6")
         })
 
         test("embedded object keeps curie context", () => {
             const embeddeds = object.embedded.findEmbeddeds(dataRels.rel1);
 
-            expect(embeddeds[0].links.requireSingleLink(dataRels.rel1).href).toEqual("http://example.com/items/5/rel1");
+            expect(embeddeds[0]!.links.requireSingleLink(dataRels.rel1).href).toEqual("http://example.com/items/5/rel1");
         })
 
         test("non-existent embedded object", () => {
