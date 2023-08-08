@@ -19,7 +19,7 @@
   },
   "scripts": {
     "prepare": "rollup -c",
-    "test": "jest --passWithNoTests"
+    "test": "jest"
   },
   "publishConfig": {
     "access": "public"
@@ -31,5 +31,8 @@
     "type": "git",
     "url": "git+https://github.com/xenit-eu/contentgrid-ts.git",
     "directory": "packages/typed-request"
+  },
+  "devDependencies": {
+    "fetch-mock": "^9.11.0"
   }
 }

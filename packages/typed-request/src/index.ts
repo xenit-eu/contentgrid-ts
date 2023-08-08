@@ -1,12 +1,4 @@
-declare const _bodyType: unique symbol;
-declare const _responseType: unique symbol;
-
-export interface RequestSpec<BodyType, ResponseType> {
-    readonly url: string;
-    readonly method: string;
-    readonly [_bodyType]: BodyType;
-    readonly [_responseType]: ResponseType;
-}
-
-export type RequestBodyType<S extends RequestSpec<any, any>> = S[typeof _bodyType];
-export type ResponseBodyType<S extends RequestSpec<any, any>> = S[typeof _responseType];
+export type {  TypedRequest as RequestSpec, RequestBodyType, ResponseBodyType } from "./request";
+export { request } from "./request";
+export { createTypedFetch } from "./fetch";
+export * as Representation from "./representation"
