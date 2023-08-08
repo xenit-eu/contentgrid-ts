@@ -22,4 +22,10 @@ jobs:
         if: ${{ github.ref_type == 'tag' }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: yarn lerna publish ${{ github.ref_name }} --no-verify-access --yes --no-push
+        run:
+          if git branch --format '%(refname:short)' --contains '${{ github.sha }}' | grep main ; then
+            git checkout main
+            yarn lerna publish ${{ github.ref_name }} --yes --no-push
+          else
+            exit 1
+          fi
