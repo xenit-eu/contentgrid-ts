@@ -2,7 +2,6 @@ import typescript from "@rollup/plugin-typescript"
 import babel from "@rollup/plugin-babel"
 import glob from 'glob';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 const sourcePath = path.resolve(process.cwd() + '/src');
 

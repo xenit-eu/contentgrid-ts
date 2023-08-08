@@ -2,9 +2,16 @@
   "name": "@contentgrid/uri-template",
   "version": "0.0.1-alpha.0",
   "description": "",
-  "main": "build/index.js",
-  "module": "build/index.mjs",
-  "types": "build/index.d.ts",
+  "main": "./build/index.js",
+  "module": "./build/index.mjs",
+  "types": "./build/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "import": "./build/index.mjs",
+      "default": "./build/index.js"
+    }
+  },
   "license": "MIT",
   "dependencies": {
     "@babel/runtime": "^7.22.6",
