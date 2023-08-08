@@ -1,5 +1,5 @@
 import UriTemplate from "@contentgrid/uri-template";
-import LinkRelation from "./rels/LinkRelation.js";
+import LinkRelation from "./rels/LinkRelation";
 
 export default class Link {
     public constructor(public readonly rel: LinkRelation, private readonly data: LinkShape) {

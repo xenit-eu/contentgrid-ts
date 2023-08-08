@@ -1,5 +1,5 @@
-import LinkRelation from "../rels/LinkRelation.js";
-import Curie from "./Curie.js";
+import LinkRelation from "../rels/LinkRelation";
+import Curie from "./Curie";
 import Template from "@contentgrid/uri-template"
 
 export class CuriedLinkRelation implements LinkRelation {

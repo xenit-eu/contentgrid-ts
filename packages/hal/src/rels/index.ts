@@ -1,3 +1,3 @@
-export { default as createRelations } from "./createRelations.js";
-export { default as ianaRelations } from "./ianaRelations.js";
-export type { default as LinkRelation } from "./LinkRelation.js";
+export { default as createRelations } from "./createRelations";
+export { default as ianaRelations } from "./ianaRelations";
+export type { default as LinkRelation } from "./LinkRelation";

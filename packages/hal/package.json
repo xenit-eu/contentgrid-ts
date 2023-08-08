@@ -2,34 +2,45 @@
   "name": "@contentgrid/hal",
   "version": "0.0.1-alpha.0",
   "description": "",
-  "type": "module",
   "main": "build/index.js",
+  "module": "build/index.mjs",
   "types": "build/index.d.ts",
   "exports": {
     ".": {
       "types": "./build/index.d.ts",
+      "import": "./build/index.mjs",
       "default": "./build/index.js"
     },
     "./curies": {
       "types": "./build/curies/index.d.ts",
+      "import": "./build/curies/index.mjs",
       "default": "./build/curies/index.js"
     },
     "./rels": {
       "types": "./build/rels/index.d.ts",
+      "import": "./build/rels/index.mjs",
       "default": "./build/rels/index.js"
     }
   },
   "license": "MIT",
   "dependencies": {
-    "@contentgrid/uri-template": "^0.0.1-alpha.0"
+    "@contentgrid/uri-template": "^0.0.1-alpha.0",
+    "tslib": "^2.6.1"
   },
   "scripts": {
-    "prepublishOnly": "tsc -b ./tsconfig.json",
+    "prepublishOnly": "rollup -c",
     "test": "jest"
   },
   "devDependencies": {
+    "@babel/core": "^7.22.9",
+    "@babel/plugin-transform-runtime": "^7.22.9",
+    "@babel/preset-env": "^7.22.9",
+    "@babel/preset-typescript": "^7.22.5",
     "@jest/globals": "^29.6.2",
+    "@rollup/plugin-babel": "^6.0.3",
+    "@rollup/plugin-typescript": "^11.1.2",
     "jest": "^29.6.2",
+    "rollup": "^3.27.2",
     "ts-jest": "^29.1.1",
     "typescript": "^5.1.6"
   },

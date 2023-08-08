@@ -1,2 +1,2 @@
-export { default as Curie } from './Curie.js';
-export { default as CurieRegistry } from './Registry.js';
+export { default as Curie } from './Curie';
+export { default as CurieRegistry } from './Registry';

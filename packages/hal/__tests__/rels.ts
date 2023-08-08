@@ -8,7 +8,7 @@ describe("createRelations", () => {
         const rels = createRelations(["test1", "test2"] as const);
         expect(Object.keys(rels)).toEqual(["test1", "test2"]);
 
-        expect(rels.test1).toEqual(new PlainLinkRelation("test1"));
+        expect(rels["test1"]).toEqual(new PlainLinkRelation("test1"));
     })
 
     test("for relations with a template", () => {

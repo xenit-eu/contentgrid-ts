@@ -1,7 +1,7 @@
-import HalObject, { HalObjectShape } from "./HalObject.js"
-import LinkRelation, { LinkRelationShape } from "./rels/LinkRelation.js"
-import { LinksShape, findByRelation, findRels } from "./Links.js"
-import { CurieRegistry } from "./curies/index.js";
+import HalObject, { HalObjectShape } from "./HalObject"
+import LinkRelation, { LinkRelationShape } from "./rels/LinkRelation"
+import { LinksShape, findByRelation, findRels } from "./Links"
+import { CurieRegistry } from "./curies";
 
 export default class HalEmbedded {
     public constructor(private readonly data: HalEmbeddedShape, private readonly curieRegistry: CurieRegistry) {

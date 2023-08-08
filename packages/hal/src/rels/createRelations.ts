@@ -1,5 +1,5 @@
 import UriTemplate from "@contentgrid/uri-template";
-import LinkRelation, { PlainLinkRelation } from "./LinkRelation.js";
+import LinkRelation, { PlainLinkRelation } from "./LinkRelation";
 
 export default function createRelations<T extends readonly string[]>(names: T): Record<T[number], LinkRelation>;
 export default function createRelations<T extends readonly string[]>(template: UriTemplate, names: T): Record<T[number], LinkRelation>;
