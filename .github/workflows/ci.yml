@@ -23,7 +23,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run:
-          if git branch --format '%(refname:short)' --contains '${{ github.sha }}' | grep main ; then
+          if git branch -a --format '%(refname:short)' --contains '${{ github.sha }}' | grep -E '^origin/main$' ; then
             git checkout main;
             yarn lerna publish ${{ github.ref_name }} --yes --no-push;
           else
