@@ -20,7 +20,7 @@
     "uri-templates": "^0.2.0"
   },
   "scripts": {
-    "prepublishOnly": "rollup -c",
+    "prepare": "rollup -c",
     "test": "jest"
   },
   "repository": {
