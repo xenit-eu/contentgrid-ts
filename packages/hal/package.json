@@ -24,6 +24,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@babel/runtime": "^7.22.10",
     "@contentgrid/uri-template": "^0.0.1-alpha.0",
     "tslib": "^2.6.1"
   },
