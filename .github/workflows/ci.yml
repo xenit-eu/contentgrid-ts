@@ -24,8 +24,8 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run:
           if git branch --format '%(refname:short)' --contains '${{ github.sha }}' | grep main ; then
-            git checkout main
-            yarn lerna publish ${{ github.ref_name }} --yes --no-push
+            git checkout main;
+            yarn lerna publish ${{ github.ref_name }} --yes --no-push;
           else
-            exit 1
+            exit 1;
           fi
