@@ -25,7 +25,7 @@ jobs:
         run:
           if git branch -a --format '%(refname:short)' --contains '${{ github.sha }}' | grep -E '^origin/main$' ; then
             git checkout main;
-            yarn lerna publish ${{ github.ref_name }} --yes --no-push;
+            yarn lerna publish ${{ github.ref_name }} --yes --no-push --no-git-tag-version;
           else
             exit 1;
           fi
