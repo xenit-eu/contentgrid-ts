@@ -1,9 +1,16 @@
 import { describe, test, expect } from "@jest/globals";
 import { resolveTemplate } from "../src";
+import { HalObjectShape } from "@contentgrid/hal/shape";
+import { HalFormsTemplateShape } from "../src/shape";
 
 describe("resolveTemplate", () => {
 
-    const object = {
+    const object: HalObjectShape<{
+        _templates: {
+            ["create-form"]: HalFormsTemplateShape,
+            other: HalFormsTemplateShape
+        }
+    }> = {
         _links: {
             self: {
                 href: "http://localhost/item/4"

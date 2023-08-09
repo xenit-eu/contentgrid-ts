@@ -6,6 +6,9 @@ import { ianaRelations } from "./rels";
 
 export default class HalObject<T> {
     public readonly links: Links;
+    public constructor(data: HalObjectShape<T>);
+    // @internal
+    public constructor(data: HalObjectShape<T>, curieRegistry?: CurieRegistry);
     public constructor(public readonly data: HalObjectShape<T>, curieRegistry?: CurieRegistry) {
         this.links = new Links(data["_links"] ?? {}, curieRegistry);
     };

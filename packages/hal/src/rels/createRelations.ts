@@ -8,7 +8,6 @@ export default function createRelations<T extends readonly string[]>(nameOrTempl
     return doCreateRelations(resolveParams(nameOrTemplate, secondNames));
 }
 
-
 function doCreateRelations<T extends readonly string[]>({template, names}: { template?: UriTemplate, names: T }): Record<T[number], LinkRelation> {
 
     const data: Partial<Record<T[number], LinkRelation>> = {};

@@ -20,14 +20,13 @@ type EnhancedRequestInit<RequestBodyType, _ResponseBodyType> = {
     body?: RepresentationOf<RequestBodyType>
 }
 
-type EnhanceRequestInit<RequestBodyType, ResponseBodyType> = Omit<RequestInit, keyof EnhancedRequestInit<RequestBodyType, ResponseBodyType>> & EnhancedRequestInit<RequestBodyType, ResponseBodyType>;
+type EnhanceRequestInit<RequestBodyType, ResponseBodyType> = Replace<RequestInit, EnhancedRequestInit<RequestBodyType, ResponseBodyType>>;
 
-export function createRequest<Req, Resp>(spec: TypedRequestSpec<Req, Resp>, init?: EnhanceRequestInit<Req, Resp>): TypedRequest<Req, Resp> {
+export type TypedRequest<RequestType, ResponseType> = Replace<Request, TypedRequestSpec<RequestType, ResponseType> & TypedBody<RequestType>>
+
+export function createRequest<Req, Resp>(spec: TypedRequestSpec<Req, Resp>, init: EnhanceRequestInit<Req, Resp>): TypedRequest<Req, Resp> {
     return new Request(spec.url, {
+        ...init,
         method: spec.method,
-        ...init
     }) as TypedRequest<Req, Resp>;
 }
-
-
-export type TypedRequest<RequestType, ResponseType> = Replace<Request, keyof TypedRequestSpec<RequestType, ResponseType> & TypedBody<RequestType>>

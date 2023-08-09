@@ -2,19 +2,34 @@ import UriTemplate from "@contentgrid/uri-template";
 import LinkRelation from "./rels/LinkRelation";
 
 export default class Link {
+    // @internal
+    #deprecationWarned: boolean = false;
+
+    // @internal
     public constructor(public readonly rel: LinkRelation, private readonly data: LinkShape) {
 
     }
 
+    // @internal
+    #warnDeprecation() {
+        if(this.deprecation && !this.#deprecationWarned) {
+            this.#deprecationWarned = true;
+            console.warn(`Link ${this} is deprecated: ${this.deprecation}`);
+        }
+    }
+
     public get href(): string {
+        this.#warnDeprecation();
         return this.data.href;
     }
 
     public get template(): UriTemplate {
+        this.#warnDeprecation();
         return new UriTemplate(this.data.href);
     }
 
     public get templated(): boolean {
+        this.#warnDeprecation();
         return this.data.templated ?? false;
     }
 
@@ -23,10 +38,12 @@ export default class Link {
     }
 
     public get title(): string | undefined {
+        this.#warnDeprecation();
         return this.data.title;
     }
 
     public get type(): string | undefined {
+        this.#warnDeprecation();
         return this.data.type;
     }
 

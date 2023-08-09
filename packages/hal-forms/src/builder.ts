@@ -2,7 +2,7 @@ import { HalFormsProperty, HalFormsPropertyOption, HalFormsTemplate } from "./ap
 import { MATCH_ANYTHING, MATCH_NOTHING } from "./_internal";
 import { TypedRequestSpec } from "@contentgrid/typed-fetch";
 
-export class HalFormsTemplateBuilder<Body, Response> implements HalFormsTemplate<Body, Response> {
+export class HalFormsTemplateBuilder<Body, Response> implements HalFormsTemplate<TypedRequestSpec<Body, Response>> {
 
     private constructor(public readonly request: TypedRequestSpec<Body, Response>, public readonly properties: HalFormsProperty[] = []) {
 
@@ -102,5 +102,5 @@ export class HalFormsPropertyBuilder implements HalFormsProperty {
 }
 
 export default function buildTemplate<B, R>(method: string, url: string): HalFormsTemplateBuilder<B, R> {
-    return HalFormsTemplateBuilder.from({ method, url } as TypedRequestSpec<B, R>)
+    return HalFormsTemplateBuilder.from<B, R>({ method, url })
 }

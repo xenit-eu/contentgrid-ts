@@ -1,6 +1,6 @@
 import fetchMock from 'fetch-mock';
 import { describe, test, expect } from "@jest/globals";
-import { Representation, createTypedFetch, request, TypedRequestSpec } from "../src";
+import { Representation, createTypedFetch, createRequest, TypedRequestSpec } from "../src";
 describe("createTypedFetch", () => {
 
     interface TestBody {
@@ -35,7 +35,7 @@ describe("createTypedFetch", () => {
             url: "http://localhost/length"
         } as TypedRequestSpec<TestBody, TestResponse>
 
-        const req = request<TestBody, TestResponse>(spec, {
+        const req = createRequest(spec, {
             body: Representation.json({s: "def"})
         });
 

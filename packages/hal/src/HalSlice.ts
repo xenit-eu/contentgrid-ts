@@ -4,6 +4,7 @@ import { LinkRelationShape} from "./rels/LinkRelation";
 import Link from './Link';
 import { LinkRelation, ianaRelations } from "./rels";
 import HalError from "./HalError";
+import { LinksShape } from "./Links";
 
 export default class HalSlice<T> extends HalObject<{}> {
 
@@ -11,6 +12,9 @@ export default class HalSlice<T> extends HalObject<{}> {
         return new HalSlice(object.data, object.links.curieRegistry);
     }
 
+    public constructor(data: HalSliceShape<T>);
+    // @internal
+    public constructor(data: HalSliceShape<T>, curieRegistry?: CurieRegistry);
     public constructor(data: HalSliceShape<T>, curieRegistry?: CurieRegistry) {
         super(data, curieRegistry)
     }
@@ -44,7 +48,8 @@ export default class HalSlice<T> extends HalObject<{}> {
     }
 }
 
-export type HalSliceShape<T> = HalObjectShape<{}> & {
+export type HalSliceShape<T> = {
+    "_links"?: LinksShape,
     "_embedded"?: {
         [rel: LinkRelationShape]: HalObjectShape<T> | ReadonlyArray<HalObjectShape<T>>
     }

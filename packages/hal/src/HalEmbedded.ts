@@ -4,6 +4,8 @@ import { LinksShape, findByRelation, findRels } from "./Links"
 import { CurieRegistry } from "./curies";
 
 export default class HalEmbedded {
+
+    // @internal
     public constructor(private readonly data: HalEmbeddedShape, private readonly curieRegistry: CurieRegistry) {
     }
 

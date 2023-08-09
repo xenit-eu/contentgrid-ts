@@ -6,6 +6,8 @@ import HalError from "./HalError";
 export default class Links {
     // @internal
     public readonly curieRegistry: CurieRegistry;
+
+    // @internal
     public constructor(private readonly links: LinksShape, curieRegistry?: CurieRegistry) {
         this.curieRegistry = curieRegistry ?? CurieRegistry.fromLinks(this);
     }
