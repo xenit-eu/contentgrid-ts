@@ -1,5 +1,7 @@
 import typescript from "@rollup/plugin-typescript"
 import babel from "@rollup/plugin-babel"
+import clear from "rollup-plugin-clear"
+
 import glob from 'glob';
 import path from 'node:path';
 
@@ -42,6 +44,9 @@ export default {
         babel({
             extensions: ['.js', '.ts'],
             babelHelpers: "runtime",
+        }),
+        clear({
+            targets: ['build']
         })
     ],
     external: id => {
