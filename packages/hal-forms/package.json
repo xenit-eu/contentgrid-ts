@@ -24,7 +24,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@contentgrid/typed-request": "^0.0.1-alpha.0",
+    "@contentgrid/typed-fetch": "^0.0.1-alpha.0",
     "@contentgrid/hal": "^0.0.1-alpha.0",
     "@babel/runtime": "^7.22.10",
     "tslib": "^2.6.1"

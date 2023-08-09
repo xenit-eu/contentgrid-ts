@@ -1,7 +1,7 @@
 import { HalFormsProperty, HalFormsTemplate } from "./api";
 import { MATCH_ANYTHING, MATCH_NOTHING } from "./_internal";
 import { HalFormsPropertyShape, HalFormsTemplateShape, HalObjectWithTemplateShape, TemplateTypedRequest } from "./_shape";
-import { RequestBodyType, TypedRequest, ResponseBodyType } from "@contentgrid/typed-request";
+import { RequestBodyType, TypedRequestSpec, ResponseBodyType } from "@contentgrid/typed-fetch";
 import { HalObjectShape } from "@contentgrid/hal/shape";
 import { HalTemplateNotFoundError, HalFormsTemplateError } from "./errors";
 import { HalError, HalObject } from "@contentgrid/hal";
@@ -12,12 +12,12 @@ class HalFormsTemplateImpl<Body, Response> implements HalFormsTemplate<Body, Res
 
     }
 
-    public get request(): TypedRequest<Body, Response> {
+    public get request(): TypedRequestSpec<Body, Response> {
         if(this.model.target !== undefined) {
             return {
                 method: this.model.method,
                 url: this.model.target
-            } as TypedRequest<Body, Response>;
+            } as TypedRequestSpec<Body, Response>;
         }
 
         const hal = new HalObject(this.entity);
@@ -26,7 +26,7 @@ class HalFormsTemplateImpl<Body, Response> implements HalFormsTemplate<Body, Res
             return {
                 method: this.model.method,
                 url: selfLink
-            } as TypedRequest<Body, Response>;
+            } as TypedRequestSpec<Body, Response>;
         } catch(error) {
             if(error instanceof HalError) {
                 throw new HalFormsTemplateError(this.templateName, "Missing 'target' and '_links.self'");
@@ -116,7 +116,7 @@ type ExtractTemplate<TemplateName extends string, Entity extends HalObjectWithTe
 
 type ExtractTemplateRequest<TemplateName extends string, Entity extends HalObjectWithTemplateShape<object, TemplateName, any, any>> = TemplateTypedRequest<ExtractTemplate<TemplateName, Entity>>;
 
-type CreateHalFormsTemplate<R extends TypedRequest<any, any>> = HalFormsTemplate<RequestBodyType<R>, ResponseBodyType<R>>;
+type CreateHalFormsTemplate<R extends TypedRequestSpec<any, any>> = HalFormsTemplate<RequestBodyType<R>, ResponseBodyType<R>>;
 
 export function resolveTemplate<
     TemplateName extends string,

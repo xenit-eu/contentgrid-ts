@@ -1,10 +1,9 @@
 import HalObject, { HalObjectShape } from "./HalObject";
 import { CurieRegistry } from "./curies";
-import { LinkRelationShape } from "./rels/LinkRelation";
+import { LinkRelationShape} from "./rels/LinkRelation";
 import Link from './Link';
-import { ianaRelations } from "./rels";
+import { LinkRelation, ianaRelations } from "./rels";
 import HalError from "./HalError";
-import { LinkRelation } from "../build/rels";
 
 export default class HalSlice<T> extends HalObject<{}> {
 

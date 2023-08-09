@@ -1,7 +1,7 @@
-import { TypedRequest } from "@contentgrid/typed-request";
+import { TypedRequestSpec } from "@contentgrid/typed-fetch";
 
 export interface HalFormsTemplate<Body, Target> {
-    readonly request: TypedRequest<Body, Target>;
+    readonly request: TypedRequestSpec<Body, Target>;
     readonly properties: readonly HalFormsProperty[];
     property(propertyName: string): HalFormsProperty;
 }

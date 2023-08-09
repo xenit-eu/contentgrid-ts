@@ -1,7 +1,8 @@
 {
-  "name": "@contentgrid/typed-request",
+  "name": "@contentgrid/typed-fetch",
   "version": "0.0.1-alpha.0",
-  "description": "Add typing information to HTTP requests",
+  "description": "Add typing information to fetch() requests and responses",
+  "keywords": ["fetch", "typescript"],
   "main": "./build/index.js",
   "module": "./build/index.mjs",
   "types": "./build/index.d.ts",
@@ -30,7 +31,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/xenit-eu/contentgrid-ts.git",
-    "directory": "packages/typed-request"
+    "directory": "packages/typed-fetch"
   },
   "devDependencies": {
     "fetch-mock": "^9.11.0"
