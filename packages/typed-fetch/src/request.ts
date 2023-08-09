@@ -1,5 +1,6 @@
 import { TypedBody } from "./body";
 import { RepresentationOf } from "./representation";
+import { Replace } from "./utils";
 
 declare const _requestType: unique symbol;
 declare const _responseType: unique symbol;
@@ -28,6 +29,5 @@ export function createRequest<Req, Resp>(spec: TypedRequestSpec<Req, Resp>, init
     }) as TypedRequest<Req, Resp>;
 }
 
-export interface TypedRequest<RequestType, ResponseType> extends Request, TypedRequestSpec<RequestType, ResponseType>, TypedBody<RequestType> {
-    json(): Promise<RequestType>
-}
+
+export type TypedRequest<RequestType, ResponseType> = Replace<Request, keyof TypedRequestSpec<RequestType, ResponseType> & TypedBody<RequestType>>

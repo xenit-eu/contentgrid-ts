@@ -1,5 +1,4 @@
 import { TypedBody } from "./body";
+import { Replace } from "./utils";
 
-export interface TypedResponse<BodyType> extends Response, TypedBody<BodyType> {
-    json(): Promise<BodyType>
-}
+export type TypedResponse<BodyType> = Replace<Response, TypedBody<BodyType>>;
