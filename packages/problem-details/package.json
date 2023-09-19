@@ -1,0 +1,36 @@
+{
+  "name": "@contentgrid/problem-details",
+  "version": "0.0.1-alpha.0",
+  "description": "RFC9547 Problem Details types and helpers",
+  "keywords": ["RFC7807", "RFC9547", "problem", "problem-details"],
+  "main": "./build/index.js",
+  "module": "./build/index.mjs",
+  "types": "./build/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "import": "./build/index.mjs",
+      "default": "./build/index.js"
+    }
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@babel/runtime": "^7.22.6",
+    "tslib": "^2.6.1"
+  },
+  "scripts": {
+    "prepare": "rollup -c",
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xenit-eu/contentgrid-ts",
+    "directory": "packages/problem-details"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "build"
+  ]
+}
