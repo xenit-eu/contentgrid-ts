@@ -1,4 +1,4 @@
-import type { HalObjectShape } from "@contentgrid/hal/shape";
+import type { HalObjectShape, LinkShape } from "@contentgrid/hal/shape";
 import type { TypedRequestSpec } from "@contentgrid/typed-fetch";
 
 declare const _requestType: unique symbol;
@@ -21,20 +21,26 @@ export enum HalFormsPropertyType {
     radio = "radio"
 }
 
-export interface HalFormsPropertyShape {
+export interface HalFormsPropertyShape<OptionType = any> {
     readonly name: string;
     readonly type?: `${HalFormsPropertyType}` | `${HalFormsPropertyType}[]`;
     readonly required?: boolean;
     readonly readOnly?: boolean;
-    readonly options?: HalFormsPropertyOptionsShape;
+    readonly options?: HalFormsPropertyOptionsShape<OptionType>;
     readonly regex?: string;
     readonly minLength?: number;
     readonly maxLength?: number;
     readonly prompt?: string;
 }
 
-interface HalFormsPropertyOptionsShape {
-    readonly inline?: string[]
+export interface HalFormsPropertyOptionsShape<T = unknown> {
+    readonly inline?: readonly T[]
+    readonly link?: LinkShape;
+    readonly selectedValues?: readonly string[];
+    readonly promptField?: keyof T & string;
+    readonly valueField?: keyof T & string;
+    readonly maxItems?: number;
+    readonly minItems?: number;
 }
 
 export type HalObjectWithTemplateShape<T, Name extends string, BodyType, ResponseType> = HalObjectShape<T> &
