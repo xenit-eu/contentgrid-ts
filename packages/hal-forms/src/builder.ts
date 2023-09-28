@@ -1,15 +1,16 @@
-import { HalFormsProperty, HalFormsPropertyOption, HalFormsTemplate } from "./api";
+import { HalFormsProperty, HalFormsPropertyInlineOptions, HalFormsPropertyOption, HalFormsPropertyRemoteOptions, HalFormsTemplate } from "./api";
 import { MATCH_ANYTHING, MATCH_NOTHING } from "./_internal";
 import { TypedRequestSpec } from "@contentgrid/typed-fetch";
+import { SimpleLink } from "@contentgrid/hal";
 
 export class HalFormsTemplateBuilder<Body, Response> implements HalFormsTemplate<TypedRequestSpec<Body, Response>> {
 
-    private constructor(public readonly request: TypedRequestSpec<Body, Response>, public readonly properties: HalFormsProperty[] = []) {
+    private constructor(public readonly name: string, public readonly request: TypedRequestSpec<Body, Response>, public readonly properties: HalFormsProperty[] = []) {
 
     }
 
     public static from<B, R>(request: TypedRequestSpec<B, R>): HalFormsTemplateBuilder<B, R> {
-        return new HalFormsTemplateBuilder(request);
+        return new HalFormsTemplateBuilder(request.method + " "+request.url, request);
     }
 
     public property(propertyName: string): HalFormsProperty {
@@ -43,7 +44,7 @@ export class HalFormsTemplateBuilder<Body, Response> implements HalFormsTemplate
 
         const builtProperty = factory(newPropertyBuilder);
 
-        return new HalFormsTemplateBuilder(this.request, this.properties.concat([builtProperty]))
+        return new HalFormsTemplateBuilder(this.name, this.request, this.properties.concat([builtProperty]))
     }
 
 }
@@ -54,7 +55,7 @@ export class HalFormsPropertyBuilder implements HalFormsProperty {
         public readonly type: string | undefined,
         public readonly readOnly: boolean,
         public readonly required: boolean,
-        public readonly options: readonly HalFormsPropertyOption[],
+        private readonly _options: readonly HalFormsPropertyOption[],
         public readonly regex: RegExp,
         public readonly minLength: number,
         public readonly maxLength: number,
@@ -62,16 +63,20 @@ export class HalFormsPropertyBuilder implements HalFormsProperty {
     ) {
     }
 
+    public get options(): HalFormsPropertyInlineOptions<HalFormsPropertyOption> {
+        return new HalFormsPropertyInlineOptionsImpl(this._options);
+    }
+
     public withType(type: string): HalFormsPropertyBuilder {
-        return new HalFormsPropertyBuilder(this.name, type, this.readOnly, this.required, this.options, this.regex, this.minLength, this.maxLength, this.prompt);
+        return new HalFormsPropertyBuilder(this.name, type, this.readOnly, this.required, this._options, this.regex, this.minLength, this.maxLength, this.prompt);
     }
 
     public withReadOnly(readOnly: boolean): HalFormsPropertyBuilder {
-        return new HalFormsPropertyBuilder(this.name, this.type, readOnly, this.required, this.options, this.regex, this.minLength, this.maxLength, this.prompt);
+        return new HalFormsPropertyBuilder(this.name, this.type, readOnly, this.required, this._options, this.regex, this.minLength, this.maxLength, this.prompt);
     }
 
     public withRequired(required: boolean): HalFormsPropertyBuilder {
-        return new HalFormsPropertyBuilder(this.name, this.type, this.readOnly, required, this.options, this.regex, this.minLength, this.maxLength, this.prompt);
+        return new HalFormsPropertyBuilder(this.name, this.type, this.readOnly, required, this._options, this.regex, this.minLength, this.maxLength, this.prompt);
     }
 
     public withOptions(options: readonly HalFormsPropertyOption[]): HalFormsPropertyBuilder {
@@ -84,19 +89,53 @@ export class HalFormsPropertyBuilder implements HalFormsProperty {
     public addOption(optionOrValue: HalFormsPropertyOption|string, prompt?: string): HalFormsPropertyBuilder {
         const option = typeof optionOrValue === "object" ? optionOrValue : { value: optionOrValue, prompt: prompt ?? optionOrValue };
 
-        return this.withOptions(this.options.concat([option]))
+        return this.withOptions(this._options.concat([option]))
     }
 
     public withRegex(regex: RegExp|null): HalFormsPropertyBuilder {
-        return new HalFormsPropertyBuilder(this.name, this.type, this.readOnly, this.required, this.options, regex ?? MATCH_ANYTHING, this.minLength, this.maxLength, this.prompt);
+        return new HalFormsPropertyBuilder(this.name, this.type, this.readOnly, this.required, this._options, regex ?? MATCH_ANYTHING, this.minLength, this.maxLength, this.prompt);
     }
 
     public withLength(min: number, max: number) {
-        return new HalFormsPropertyBuilder(this.name, this.type, this.readOnly, this.required, this.options, this.regex, min, max, this.prompt);
+        return new HalFormsPropertyBuilder(this.name, this.type, this.readOnly, this.required, this._options, this.regex, min, max, this.prompt);
     }
 
     public withPrompt(prompt: string): HalFormsPropertyBuilder {
-        return new HalFormsPropertyBuilder(this.name, this.type, this.readOnly, this.required, this.options, this.regex, this.minLength, this.maxLength, prompt);
+        return new HalFormsPropertyBuilder(this.name, this.type, this.readOnly, this.required, this._options, this.regex, this.minLength, this.maxLength, prompt);
+    }
+}
+
+class HalFormsPropertyInlineOptionsImpl implements HalFormsPropertyInlineOptions<HalFormsPropertyOption> {
+    public constructor(public readonly inline: readonly HalFormsPropertyOption[]) {
+
+    }
+
+    public get selectedValues(): readonly string[] {
+        return[]
+    }
+
+    public get maxItems(): number {
+        return Infinity;
+    }
+
+    public get minItems(): number {
+        return 0;
+    }
+
+    public toOption(data: HalFormsPropertyOption): HalFormsPropertyOption {
+        return data;
+    }
+
+    public loadOptions(): Promise<readonly HalFormsPropertyOption[]> {
+        return Promise.resolve(this.inline);
+    }
+
+    public isInline(): this is HalFormsPropertyInlineOptions<HalFormsPropertyOption> {
+        return true;
+    }
+
+    public isRemote(): this is HalFormsPropertyRemoteOptions<HalFormsPropertyOption> {
+        return false;
     }
 
 }

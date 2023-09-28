@@ -1,15 +1,19 @@
-import { HalFormsProperty, HalFormsTemplate } from "./api";
+import { HalFormsProperty, HalFormsPropertyInlineOptions, HalFormsPropertyOption, HalFormsPropertyRemoteOptions, HalFormsTemplate } from "./api";
 import { MATCH_ANYTHING, MATCH_NOTHING } from "./_internal";
-import { HalFormsPropertyShape, HalFormsTemplateShape, HalObjectWithTemplateShape, TemplateTypedRequest } from "./_shape";
+import { HalFormsPropertyOptionsShape, HalFormsPropertyShape, HalFormsTemplateShape, HalObjectWithTemplateShape, TemplateTypedRequest } from "./_shape";
 import { TypedRequestSpec } from "@contentgrid/typed-fetch";
 import { HalObjectShape } from "@contentgrid/hal/shape";
-import { HalTemplateNotFoundError, HalFormsTemplateError } from "./errors";
-import { HalError, HalObject } from "@contentgrid/hal";
+import { HalTemplateNotFoundError, HalFormsTemplateError, InvalidHalFormsOptionError } from "./errors";
+import { HalError, HalObject, SimpleLink } from "@contentgrid/hal";
 
 class HalFormsTemplateImpl<Body, Response> implements HalFormsTemplate<TypedRequestSpec<Body, Response>> {
 
     public constructor(private readonly templateName: string, private readonly entity: HalObjectShape<object>, private readonly model: HalFormsTemplateShape<Body, Response>) {
 
+    }
+
+    public get name(): string {
+        return this.templateName;
     }
 
     public get request(): TypedRequestSpec<Body, Response> {
@@ -41,17 +45,17 @@ class HalFormsTemplateImpl<Body, Response> implements HalFormsTemplate<TypedRequ
         var propertyModel = this.model.properties
             .find(prop => prop.name === propertyName);
 
-        return new HalFormsPropertyImpl(propertyName, propertyModel);
+        return new HalFormsPropertyImpl(this, propertyName, propertyModel);
     }
 
     public get properties(): readonly HalFormsProperty[] {
-        return this.model.properties.map(prop => new HalFormsPropertyImpl(prop.name, prop));
+        return this.model.properties.map(prop => new HalFormsPropertyImpl(this, prop.name, prop));
     }
 
 }
 
-class HalFormsPropertyImpl implements HalFormsProperty {
-    public constructor(public readonly name: string, private readonly model: HalFormsPropertyShape | undefined) {
+class HalFormsPropertyImpl<OptionType = unknown> implements HalFormsProperty<OptionType> {
+    public constructor(private readonly _template: HalFormsTemplate<any>, public readonly name: string, private readonly model: HalFormsPropertyShape<OptionType> | undefined) {
 
     }
 
@@ -73,15 +77,15 @@ class HalFormsPropertyImpl implements HalFormsProperty {
         return this.model?.type;
     }
 
-    get options(): ReadonlyArray<{ readonly prompt: string, readonly value: string }> {
-        if(!this.model?.options?.inline) {
-            return [];
+    get options(): HalFormsPropertyInlineOptions<OptionType> | HalFormsPropertyRemoteOptions<OptionType> {
+        const options = this.model?.options;
+        if(options?.inline) {
+            return new HalFormsPropertyInlineOptionsImpl(this._template, this, options)
         }
-        if(Array.isArray(this.model.options.inline)) {
-            return this.model.options.inline
-                .map(opt => ({prompt: opt, value: opt}));
+        if(options?.link) {
+            return new HalFormsPropertyRemoteOptionsImpl(this._template, this, options)
         }
-        return []; // TODO: implement prompt/value when it becomes necessary
+        return new HalFormsPropertyInlineOptionsImpl(this._template, this, options)
     }
 
     get regex(): RegExp {
@@ -103,7 +107,7 @@ class HalFormsPropertyImpl implements HalFormsProperty {
     }
 
     get maxLength(): number {
-        return this.model?.maxLength ?? Number.MAX_SAFE_INTEGER;
+        return this.model?.maxLength ?? Infinity;
     }
 
     get prompt(): string | undefined {
@@ -111,6 +115,89 @@ class HalFormsPropertyImpl implements HalFormsProperty {
     }
 }
 
+abstract class HalFormsPropertyCommonOptionsImpl<T>  {
+    public constructor(private readonly _template: HalFormsTemplate<any>, private readonly _property: HalFormsProperty<any>, protected model: HalFormsPropertyOptionsShape<T> | undefined) {
+
+    }
+
+    public get selectedValues(): readonly string[] {
+        return this.model?.selectedValues ?? [];
+    }
+
+    public get maxItems(): number {
+        return this.model?.maxItems ?? Infinity;
+    }
+
+    public get minItems(): number {
+        return this.model?.minItems ?? 0;
+    }
+
+    public toOption(data: T): HalFormsPropertyOption {
+        if (data !== null && typeof data === "object") {
+            const promptField = this.model?.promptField ?? "prompt";
+            const valueField = this.model?.valueField ?? "value";
+
+            if(!(promptField in data) || !data[promptField as keyof T]) {
+                throw new InvalidHalFormsOptionError(this._template, this._property, `Field '${promptField}' missing in option data`);
+            }
+            if(!(valueField in data) || !data[valueField as keyof T]) {
+                throw new InvalidHalFormsOptionError(this._template, this._property, `Field '${valueField}' missing in option data`);
+            }
+
+            return {
+                prompt: data[promptField as keyof T]!.toString(),
+                value: data[valueField as keyof T]!.toString()
+            };
+        } else if(data !== null && data !== undefined) {
+            const value = data.toString();
+            return { prompt: value, value };
+        } else {
+            throw new InvalidHalFormsOptionError(this._template, this._property, `Invalid datatype '${typeof data}'`);
+        }
+    }
+
+}
+
+class HalFormsPropertyInlineOptionsImpl<T = unknown> extends HalFormsPropertyCommonOptionsImpl<T> implements HalFormsPropertyInlineOptions<T> {
+    public get inline(): readonly T[] {
+        return this.model?.inline ?? [];
+    }
+
+    public loadOptions(): Promise<readonly HalFormsPropertyOption[]> {
+        return Promise.resolve(this.inline.map(value => this.toOption(value)));
+    }
+
+    public isInline(): this is HalFormsPropertyInlineOptions<T> {
+        return true;
+    }
+
+    public isRemote(): this is HalFormsPropertyRemoteOptions<T> {
+        return false;
+    }
+}
+
+class HalFormsPropertyRemoteOptionsImpl<T = unknown> extends HalFormsPropertyCommonOptionsImpl<T> implements HalFormsPropertyRemoteOptions<T> {
+    public readonly link: SimpleLink;
+    public constructor(template: HalFormsTemplate<any>, property: HalFormsProperty<any>, model: HalFormsPropertyOptionsShape<T>) {
+        super(template, property, model);
+        this.link = new SimpleLink(model.link!);
+    }
+
+    public async loadOptions(fetcher: (link: SimpleLink) => Promise<readonly T[]>): Promise<readonly HalFormsPropertyOption[]> {
+        const data = await fetcher(this.link);
+
+        return data.map(value => this.toOption(value));
+    }
+
+    public isInline(): this is HalFormsPropertyInlineOptions<T> {
+        return false;
+    }
+
+    public isRemote(): this is HalFormsPropertyRemoteOptions<T> {
+        return true;
+    }
+
+}
 
 type ExtractTemplate<TemplateName extends string, Entity extends HalObjectWithTemplateShape<object, TemplateName, any, any>> = Exclude<Exclude<Entity["_templates"], undefined>[TemplateName], undefined>;
 

@@ -1,4 +1,4 @@
-import { describe, test, expect } from "@jest/globals";
+import { describe, test, expect, jest } from "@jest/globals";
 import { resolveTemplate } from "../src";
 import { HalObjectShape } from "@contentgrid/hal/shape";
 import { HalFormsTemplateShape } from "../src/shape";
@@ -22,11 +22,31 @@ describe("resolveTemplate", () => {
                 target: "http://localhost/create",
                 properties: [
                     {
-                        name: "abc"
+                        name: "abc",
+                        type: "text",
+                        options: {
+                            inline: [
+                                {
+                                    XXX: "abc",
+                                    v: "ABC"
+                                },
+                                {
+                                    XXX: "def",
+                                    v: "ABD"
+                                }
+                            ] as const,
+                            promptField: "XXX",
+                            valueField: "v"
+                        }
                     },
                     {
                         name: "def",
-                        type: "number"
+                        type: "number",
+                        options: {
+                            link: {
+                                href: "http://localhost/numbers?q=4"
+                            }
+                        }
                     },
                     {
                         name: "xyz",
@@ -54,10 +74,57 @@ describe("resolveTemplate", () => {
             url: "http://localhost/create"
         })
         expect(template?.properties.length).toEqual(3);
+        const propAbc = template!.property("abc");
         expect(template?.property("abc").readOnly).toBe(false);
-        expect(template?.property("abc").type).toBeUndefined();
+        expect(template?.property("abc").type).toEqual("text");
+        const abcOpts = propAbc.options;
+        expect(abcOpts.isInline()).toBe(true);
+        expect(abcOpts.loadOptions(() => { throw new Error("Not implemented") }))
+            .resolves
+            .toEqual([
+                {
+                    prompt: "abc",
+                    value: "ABC"
+                },
+                {
+                    prompt: "def",
+                    value: "ABD"
+                }
+            ])
+
+        if(abcOpts.isInline()) {
+            expect(abcOpts.inline.length).toBe(2);
+        }
+
         expect(template?.property("def").readOnly).toBe(false);
         expect(template?.property("def").type).toBe("number");
+        const defOpts = template!.property("def").options;
+        expect(defOpts.isRemote()).toBe(true);
+
+        const mockLoad = jest.fn(() => Promise.resolve(["1", "2", "3"]));
+
+        expect(defOpts.loadOptions(mockLoad))
+            .resolves
+            .toEqual([
+                {
+                    prompt: "1",
+                    value: "1"
+                },
+                {
+                    prompt: "2",
+                    value: "2"
+                },
+                {
+                    prompt: "3",
+                    value: "3"
+                }
+            ]);
+
+        if(abcOpts.isRemote()) {
+            expect(mockLoad.mock.lastCall).toHaveBeenCalledWith(abcOpts.link);
+            expect(abcOpts.link.href).toEqual("http://localhost/numbers?q=4");
+        }
+
         expect(template?.property("xyz").readOnly).toBe(true);
     })
 

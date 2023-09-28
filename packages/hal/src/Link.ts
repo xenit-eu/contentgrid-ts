@@ -1,12 +1,11 @@
 import UriTemplate from "@contentgrid/uri-template";
 import LinkRelation from "./rels/LinkRelation";
 
-export default class Link {
+export class SimpleLink {
     // @internal
     #deprecationWarned: boolean = false;
 
-    // @internal
-    public constructor(public readonly rel: LinkRelation, private readonly data: LinkShape) {
+    public constructor(private readonly data: LinkShape) {
 
     }
 
@@ -52,6 +51,22 @@ export default class Link {
     }
 
     public toString() {
+        return `<${this.href}>; ${toLinkParams({
+            name: this.name,
+            title: this.title,
+            type: this.type
+        })}`
+    }
+
+}
+
+export default class Link extends SimpleLink {
+    // @internal
+    public constructor(public readonly rel: LinkRelation, data: LinkShape) {
+        super(data);
+    }
+
+    public override toString() {
         return `<${this.href}>; ${toLinkParams({
             rel: this.rel.value,
             name: this.name,
