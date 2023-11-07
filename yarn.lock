@@ -1842,19 +1842,19 @@
   integrity sha512-Hl219/BT5fLAaz6NDkSuhzasy49dwQS/DSdu4MdggFB8zcXv7vflBI3xp7FEmkmdDkBUI2bPUNeMttp2knYdxw==
 
 "@types/uri-templates@^0.1.31":
-  version "0.1.32"
-  resolved "https://registry.yarnpkg.com/@types/uri-templates/-/uri-templates-0.1.32.tgz#d475a5de9cf19dd5aaf79cc96d7d73106309ed6d"
-  integrity sha512-PNRZF4z8uj81BBq8PumesGQVVZw0vjb1HFW9wll+UcHOPxWcop/8TwlvGzeIivmTdpxmpV2kXfRYCNWTHkIy+g==
+  version "0.1.34"
+  resolved "https://registry.yarnpkg.com/@types/uri-templates/-/uri-templates-0.1.34.tgz#be9b6fb7d205c641e4bf1c46776f84e9b26ad631"
+  integrity sha512-13v4r/Op3iEO1y6FvEHQjrUNnrNyO67SigdFC9n80sVfsrM2AWJRNYbE1pBs4/p87I7z1J979JGeLAo3rM1L/Q==
 
 "@types/yargs-parser@*":
-  version "21.0.0"
-  resolved "https://registry.yarnpkg.com/@types/yargs-parser/-/yargs-parser-21.0.0.tgz#0c60e537fa790f5f9472ed2776c2b71ec117351b"
-  integrity sha512-iO9ZQHkZxHn4mSakYV0vFHAVDyEOIJQrV2uZ06HxEPcx+mt8swXoZHIbaaJ2crJYFfErySgktuTZ3BeLz+XmFA==
+  version "21.0.2"
+  resolved "https://registry.yarnpkg.com/@types/yargs-parser/-/yargs-parser-21.0.2.tgz#7bd04c5da378496ef1695a1008bf8f71847a8b8b"
+  integrity sha512-5qcvofLPbfjmBfKaLfj/+f+Sbd6pN4zl7w7VSVI5uz7m9QZTuB2aZAa2uo1wHFBNN2x6g/SoTkXmd8mQnQF2Cw==
 
 "@types/yargs@^17.0.8":
-  version "17.0.24"
-  resolved "https://registry.yarnpkg.com/@types/yargs/-/yargs-17.0.24.tgz#b3ef8d50ad4aa6aecf6ddc97c580a00f5aa11902"
-  integrity sha512-6i0aC7jV6QzQB8ne1joVZ0eSFIstHsCrobmOtghM11yGlH0j43FKL2UhWdELkyps0zuf7qVTUVCCR+tgSlyLLw==
+  version "17.0.30"
+  resolved "https://registry.yarnpkg.com/@types/yargs/-/yargs-17.0.30.tgz#921094ec92faffd2cd7e5ddb02f95ba158ab5c1d"
+  integrity sha512-3SJLzYk3yz3EgI9I8OLoH06B3PdXIoU2imrBZzaGqUtUXf5iUNDtmAfCGuQrny1bnmyjh/GM/YNts6WK5jR5Rw==
   dependencies:
     "@types/yargs-parser" "*"
 
