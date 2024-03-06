@@ -6,6 +6,8 @@ declare const _requestType: unique symbol;
 export interface HalFormsTemplateShape<BodyType = unknown, ResponseType = unknown> {
     readonly method: string;
     readonly target?: string;
+    readonly contentType?: string;
+    readonly title?: string;
     readonly properties: readonly HalFormsPropertyShape[];
     readonly [_requestType]?: TypedRequestSpec<BodyType, ResponseType>;
 }

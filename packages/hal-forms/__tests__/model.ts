@@ -19,6 +19,7 @@ describe("resolveTemplate", () => {
         _templates: {
             ["create-form"]: {
                 method: "GET",
+                title: "Create new",
                 target: "http://localhost/create",
                 properties: [
                     {
@@ -56,6 +57,7 @@ describe("resolveTemplate", () => {
             },
             other: {
                 method: "POST",
+                contentType: "application/x-www-form-urlencoded",
                 properties: [
                     {
                         name: "ZZZ",
@@ -73,6 +75,8 @@ describe("resolveTemplate", () => {
             method: "GET",
             url: "http://localhost/create"
         })
+        expect(template?.contentType).toEqual("application/json");
+        expect(template?.title).toEqual("Create new");
         expect(template?.properties.length).toEqual(3);
         const propAbc = template!.property("abc");
         expect(template?.property("abc").readOnly).toBe(false);
@@ -135,6 +139,8 @@ describe("resolveTemplate", () => {
             method: "POST",
             url: "http://localhost/item/4"
         })
+        expect(template?.title).toBeUndefined();
+        expect(template?.contentType).toEqual("application/x-www-form-urlencoded")
         expect(template?.properties.length).toEqual(1);
         expect(template?.property("ZZZ").required).toBe(true);
     })

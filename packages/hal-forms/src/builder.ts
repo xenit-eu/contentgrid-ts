@@ -5,12 +5,21 @@ import { SimpleLink } from "@contentgrid/hal";
 
 export class HalFormsTemplateBuilder<Body, Response> implements HalFormsTemplate<TypedRequestSpec<Body, Response>> {
 
-    private constructor(public readonly name: string, public readonly request: TypedRequestSpec<Body, Response>, public readonly properties: HalFormsProperty[] = []) {
+    private constructor(
+        public readonly name: string,
+        public readonly request: TypedRequestSpec<Body, Response>,
+        public readonly contentType: string = "application/json",
+        public readonly properties: HalFormsProperty[] = []
+    ) {
 
     }
 
     public static from<B, R>(request: TypedRequestSpec<B, R>): HalFormsTemplateBuilder<B, R> {
         return new HalFormsTemplateBuilder(request.method + " "+request.url, request);
+    }
+
+    public get title() {
+        return undefined;
     }
 
     public property(propertyName: string): HalFormsProperty {
@@ -44,7 +53,11 @@ export class HalFormsTemplateBuilder<Body, Response> implements HalFormsTemplate
 
         const builtProperty = factory(newPropertyBuilder);
 
-        return new HalFormsTemplateBuilder(this.name, this.request, this.properties.concat([builtProperty]))
+        return new HalFormsTemplateBuilder(this.name, this.request, this.contentType, this.properties.concat([builtProperty]))
+    }
+
+    public withContentType(contentType: string):  HalFormsTemplateBuilder<Body, Response> {
+        return new HalFormsTemplateBuilder(this.name, this.request, contentType, this.properties)
     }
 
 }

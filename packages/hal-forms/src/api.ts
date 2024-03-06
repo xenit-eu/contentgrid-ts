@@ -3,6 +3,8 @@ import { TypedRequestSpec } from "@contentgrid/typed-fetch";
 
 export interface HalFormsTemplate<RequestSpec extends TypedRequestSpec<any, any>> {
     readonly name: string;
+    readonly title: string | undefined;
+    readonly contentType: string;
     readonly request: RequestSpec;
     readonly properties: readonly HalFormsProperty[];
     property(propertyName: string): HalFormsProperty;

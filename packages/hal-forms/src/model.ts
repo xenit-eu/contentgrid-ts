@@ -16,6 +16,14 @@ class HalFormsTemplateImpl<Body, Response> implements HalFormsTemplate<TypedRequ
         return this.templateName;
     }
 
+    public get contentType() {
+        return this.model.contentType ?? "application/json";
+    }
+
+    public get title() {
+        return this.model.title ?? undefined;
+    }
+
     public get request(): TypedRequestSpec<Body, Response> {
         if(this.model.target !== undefined) {
             return {
