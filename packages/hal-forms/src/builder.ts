@@ -1,7 +1,6 @@
 import { HalFormsProperty, HalFormsPropertyInlineOptions, HalFormsPropertyOption, HalFormsPropertyRemoteOptions, HalFormsTemplate } from "./api";
 import { MATCH_ANYTHING, MATCH_NOTHING } from "./_internal";
 import { TypedRequestSpec } from "@contentgrid/typed-fetch";
-import { SimpleLink } from "@contentgrid/hal";
 
 export class HalFormsTemplateBuilder<Body, Response> implements HalFormsTemplate<TypedRequestSpec<Body, Response>> {
 
@@ -26,7 +25,7 @@ export class HalFormsTemplateBuilder<Body, Response> implements HalFormsTemplate
         return this.properties
             .find(property => property.name === propertyName) ?? new HalFormsPropertyBuilder(
                 propertyName,
-                undefined,
+                "text",
                 true,
                 false,
                 [],
@@ -41,7 +40,7 @@ export class HalFormsTemplateBuilder<Body, Response> implements HalFormsTemplate
 
         const newPropertyBuilder = new HalFormsPropertyBuilder(
             propertyName,
-            undefined,
+            "text",
             false,
             false,
             [],
@@ -63,9 +62,10 @@ export class HalFormsTemplateBuilder<Body, Response> implements HalFormsTemplate
 }
 
 export class HalFormsPropertyBuilder implements HalFormsProperty {
+    // @internal
     public constructor(
         public readonly name: string,
-        public readonly type: string | undefined,
+        public readonly type: string,
         public readonly readOnly: boolean,
         public readonly required: boolean,
         private readonly _options: readonly HalFormsPropertyOption[],

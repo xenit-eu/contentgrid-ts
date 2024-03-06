@@ -14,7 +14,7 @@ export interface HalFormsProperty<OptionType = unknown> {
     readonly name: string;
     readonly readOnly: boolean;
     readonly required: boolean;
-    readonly type: string | undefined;
+    readonly type: string;
     readonly options: HalFormsPropertyInlineOptions<OptionType> | HalFormsPropertyRemoteOptions<OptionType>;
     readonly regex: RegExp;
     readonly minLength: number;

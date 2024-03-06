@@ -81,8 +81,8 @@ class HalFormsPropertyImpl<OptionType = unknown> implements HalFormsProperty<Opt
         return this.model.required ?? false;
     }
 
-    get type(): string | undefined {
-        return this.model?.type;
+    get type(): string {
+        return this.model?.type ?? "text";
     }
 
     get options(): HalFormsPropertyInlineOptions<OptionType> | HalFormsPropertyRemoteOptions<OptionType> {
