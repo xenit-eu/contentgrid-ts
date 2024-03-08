@@ -82,8 +82,8 @@ describe("resolveTemplate", () => {
         expect(template?.property("abc").readOnly).toBe(false);
         expect(template?.property("abc").type).toEqual("text");
         const abcOpts = propAbc.options;
-        expect(abcOpts.isInline()).toBe(true);
-        expect(abcOpts.loadOptions(() => { throw new Error("Not implemented") }))
+        expect(abcOpts!.isInline()).toBe(true);
+        expect(abcOpts!.loadOptions(() => { throw new Error("Not implemented") }))
             .resolves
             .toEqual([
                 {
@@ -96,18 +96,18 @@ describe("resolveTemplate", () => {
                 }
             ])
 
-        if(abcOpts.isInline()) {
+        if(abcOpts!.isInline()) {
             expect(abcOpts.inline.length).toBe(2);
         }
 
         expect(template?.property("def").readOnly).toBe(false);
         expect(template?.property("def").type).toBe("number");
         const defOpts = template!.property("def").options;
-        expect(defOpts.isRemote()).toBe(true);
+        expect(defOpts!.isRemote()).toBe(true);
 
         const mockLoad = jest.fn(() => Promise.resolve(["1", "2", "3"]));
 
-        expect(defOpts.loadOptions(mockLoad))
+        expect(defOpts!.loadOptions(mockLoad))
             .resolves
             .toEqual([
                 {
@@ -124,7 +124,7 @@ describe("resolveTemplate", () => {
                 }
             ]);
 
-        if(abcOpts.isRemote()) {
+        if(abcOpts!.isRemote()) {
             expect(mockLoad.mock.lastCall).toHaveBeenCalledWith(abcOpts.link);
             expect(abcOpts.link.href).toEqual("http://localhost/numbers?q=4");
         }

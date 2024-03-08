@@ -1,6 +1,6 @@
 import { HalFormsProperty, HalFormsPropertyInlineOptions, HalFormsPropertyOption, HalFormsPropertyRemoteOptions, HalFormsTemplate } from "./api";
 import { MATCH_ANYTHING, MATCH_NOTHING } from "./_internal";
-import { HalFormsPropertyOptionsShape, HalFormsPropertyShape, HalFormsTemplateShape, HalObjectWithTemplateShape, TemplateTypedRequest } from "./_shape";
+import { HalFormsPropertyOptionsShape, HalFormsPropertyShape, HalFormsPropertyValue, HalFormsTemplateShape, HalObjectWithTemplateShape, TemplateTypedRequest } from "./_shape";
 import { TypedRequestSpec } from "@contentgrid/typed-fetch";
 import { HalObjectShape } from "@contentgrid/hal/shape";
 import { HalTemplateNotFoundError, HalFormsTemplateError, InvalidHalFormsOptionError } from "./errors";
@@ -85,7 +85,7 @@ class HalFormsPropertyImpl<OptionType = unknown> implements HalFormsProperty<Opt
         return this.model?.type ?? "text";
     }
 
-    get options(): HalFormsPropertyInlineOptions<OptionType> | HalFormsPropertyRemoteOptions<OptionType> {
+    get options(): HalFormsPropertyInlineOptions<OptionType> | HalFormsPropertyRemoteOptions<OptionType> | null {
         const options = this.model?.options;
         if(options?.inline) {
             return new HalFormsPropertyInlineOptionsImpl(this._template, this, options)
@@ -93,7 +93,18 @@ class HalFormsPropertyImpl<OptionType = unknown> implements HalFormsProperty<Opt
         if(options?.link) {
             return new HalFormsPropertyRemoteOptionsImpl(this._template, this, options)
         }
-        return new HalFormsPropertyInlineOptionsImpl(this._template, this, options)
+        if(options) {
+            return new HalFormsPropertyInlineOptionsImpl(this._template, this, options)
+        } else {
+            return null;
+        }
+    }
+
+    get multiValue(): boolean {
+        if(this.options === null) {
+            return false;
+        }
+        return this.options.maxItems !== 1;
     }
 
     get regex(): RegExp {
@@ -120,6 +131,10 @@ class HalFormsPropertyImpl<OptionType = unknown> implements HalFormsProperty<Opt
 
     get prompt(): string | undefined {
         return this.model?.prompt;
+    }
+
+    get value(): HalFormsPropertyValue | undefined {
+        return this.model?.value;
     }
 }
 

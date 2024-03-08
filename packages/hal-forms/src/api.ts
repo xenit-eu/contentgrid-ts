@@ -1,5 +1,6 @@
 import { SimpleLink } from "@contentgrid/hal";
 import { TypedRequestSpec } from "@contentgrid/typed-fetch";
+import { HalFormsPropertyType, HalFormsPropertyValue } from "./_shape";
 
 export interface HalFormsTemplate<RequestSpec extends TypedRequestSpec<any, any>> {
     readonly name: string;
@@ -14,12 +15,14 @@ export interface HalFormsProperty<OptionType = unknown> {
     readonly name: string;
     readonly readOnly: boolean;
     readonly required: boolean;
-    readonly type: string;
-    readonly options: HalFormsPropertyInlineOptions<OptionType> | HalFormsPropertyRemoteOptions<OptionType>;
+    readonly type: HalFormsPropertyType | string;
+    readonly options: HalFormsPropertyInlineOptions<OptionType> | HalFormsPropertyRemoteOptions<OptionType> | null;
+    readonly multiValue: boolean;
     readonly regex: RegExp;
     readonly minLength: number;
     readonly maxLength: number;
     readonly prompt: string | undefined;
+    readonly value: HalFormsPropertyValue | undefined;
 }
 
 interface HalFormsPropertyCommonOptions<T> {

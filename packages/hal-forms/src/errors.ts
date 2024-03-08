@@ -17,9 +17,22 @@ export class HalTemplateNotFoundError extends HalFormsTemplateError {
     }
 }
 
-export class InvalidHalFormsOptionError extends HalFormsTemplateError {
-    public constructor(template: HalFormsTemplate<any>, readonly property: HalFormsProperty, message: string) {
-        super(template.name, `property ${property.name} has invalid options: ${message}`)
+export class HalFormsTemplatePropertyError extends HalFormsTemplateError {
+    public constructor(
+        template: HalFormsTemplate<any>,
+        readonly property: HalFormsProperty,
+        message: string
+    ) {
+        super(template.name, `property ${property.name}: ${message}`)
+        Object.setPrototypeOf(this, new.target.prototype);
+        this.name = InvalidHalFormsOptionError.name;
+    }
+
+}
+
+export class InvalidHalFormsOptionError extends HalFormsTemplatePropertyError {
+    public constructor(template: HalFormsTemplate<any>, property: HalFormsProperty, message: string) {
+        super(template, property, `invalid options: ${message}`)
         Object.setPrototypeOf(this, new.target.prototype);
         this.name = InvalidHalFormsOptionError.name;
     }
