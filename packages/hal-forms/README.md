@@ -77,6 +77,34 @@ templateValues.values.forEach(value => {
 
 </details>
 
+### Encoding HAL-FORMS into requests
+
+After collecting user input, you probably want to send a request to the backend to submit the values entered in the form.
+
+The `@contentgrid/hal-forms/codecs` sub-package encodes the values according to the content-type required by the HAL-FORMS template.
+
+<details>
+
+<summary>Code example for encoding form values with codecs</summary>
+
+```typescript
+import codecs from "@contentgrid/hal-forms/codecs";
+
+const request = codecs.requireCodecFor(template) // template is a HalFormsTemplate
+    .encode(templateValues); // templateValues is a HalFormValues
+
+// The HAL-FORMS template method, target, contentType and values are encoded in request
+
+// Put some additional headers on your request here
+request.headers.set('Authorization', 'Basic ....');
+
+// Perform the HTTP request
+const response = await fetch(request);
+console.log(response);
+```
+
+</details>
+
 ### Shapes
 
 The `@contentgrid/hal-forms/shape` sub-package provides POJO (plain old javascript object) types that can be used to represent the raw HAL-FORMS JSON data.
