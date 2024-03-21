@@ -21,6 +21,11 @@
       "types": "./build/shape.d.ts",
       "import": "./build/shape.mjs",
       "default": "./build/shape.js"
+    },
+    "./values": {
+      "types": "./build/values/index.d.ts",
+      "import": "./build/values/index.mjs",
+      "default": "./build/values/index.js"
     }
   },
   "license": "MIT",

@@ -47,6 +47,36 @@ template.properties.forEach(property => {
 
 </details>
 
+### Interactive form value management
+
+When you have a form, you probably want to display it to your users in some way so they can enter values in your form fields.
+
+The `@contentgrid/hal-forms/values` package is a simple utility to manage the form field values entered by users.
+
+It uses the correct datatype belonging to each form field.
+
+<details>
+
+<summary>Code example for form value management using HAL-FORMS values</summary>
+
+```typescript
+import { createValues } from "@contentgrid/hal-forms/values"
+
+const templateValues = createValues(template); // template is a HalFormsTemplate
+
+templateValues.values.forEach(value => {
+    console.log(`Field ${value.property.name}: ${value.value}`)
+})
+
+templateValues = templateValues.withValue("name", "Jeff"); // Creates a new object with the value set
+
+templateValues.values.forEach(value => {
+    console.log(`Field ${value.property.name}: ${value.value}`)
+})
+```
+
+</details>
+
 ### Shapes
 
 The `@contentgrid/hal-forms/shape` sub-package provides POJO (plain old javascript object) types that can be used to represent the raw HAL-FORMS JSON data.
