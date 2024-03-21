@@ -1,10 +1,10 @@
 import { TypedRequestSpec } from "@contentgrid/typed-fetch";
-import { HalFormValue, HalFormValues } from "./api";
+import { AnyHalFormValue, DefinedHalFormValue, HalFormValues } from "./api";
 import { HalFormsTemplate } from "../api";
 import { HalFormsPropertyType } from "../_shape";
 import { HalFormValueTypeError } from "./errors";
 
-type FormValueValue = Exclude<HalFormValue["value"], undefined>;
+type FormValueValue = DefinedHalFormValue["value"];
 
 type ValueMapping = { [propertyName: string]: FormValueValue };
 
@@ -20,7 +20,7 @@ export class HalFormValuesImpl<RS extends TypedRequestSpec<any, any>> implements
     ) {
         // Initialize form fields with the defaults from the form
         this.valueMapping = valueMapping ?? template.properties.reduce((valueMapping, property) => {
-            if(property.value === undefined) {
+            if(property.value === undefined || property.value === null) {
                 return valueMapping;
             } else {
                 return this._appendValue(valueMapping, property.name, property.value);
@@ -28,17 +28,17 @@ export class HalFormValuesImpl<RS extends TypedRequestSpec<any, any>> implements
         }, {} as ValueMapping);
     }
 
-    public get values(): readonly HalFormValue[] {
+    public get values(): readonly AnyHalFormValue[] {
         return this.template.properties.map(property => this.value(property.name));
     }
 
-    public value(propertyName: string): HalFormValue {
+    public value(propertyName: string): AnyHalFormValue {
         const property = this.template.property(propertyName);
         const value = this.valueMapping[property.name];
         return {
             property: property,
             value: value === undefined ? property.value : value
-        } as HalFormValue;
+        } as AnyHalFormValue;
     }
 
     public withValues(values: ValueMapping ): HalFormValues<RS> {
@@ -117,9 +117,6 @@ function coerceToValidType(type: HalFormsPropertyType | string, value: FormValue
 
 
 function isValidTypeValue(type: HalFormsPropertyType | string, value: FormValueValue) {
-    if(value === null) {
-        return true;
-    }
     if(Array.isArray(value)) {
         return false;
     }

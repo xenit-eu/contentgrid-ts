@@ -1,7 +1,11 @@
 import { HalFormsProperty, HalFormsTemplate } from "../api";
 import { HalFormsTemplatePropertyError } from "../errors";
 
+/**
+ * An exception thrown when the type supplied for a HAL-FORMS property value is incorrect
+ */
 export class HalFormValueTypeError extends HalFormsTemplatePropertyError {
+    // @internal This exception should only be constructed by this package itself
     public constructor(
         template: HalFormsTemplate<any>,
         property: HalFormsProperty,

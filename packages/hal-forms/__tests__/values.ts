@@ -75,6 +75,10 @@ describe("values", () => {
         })
 
         test("with an invalid value type", () => {
+
+            expect(() => formValues.withValue("total.vat", null as any))
+                .toThrowError(new HalFormValueTypeError(form, form.property("total.vat"), null))
+
             expect(() => formValues.withValue("total.vat", "123"))
                 .toThrowError(new HalFormValueTypeError(form, form.property("total.vat"), "123"))
 
@@ -126,12 +130,10 @@ describe("values", () => {
         })
     })
 
-    describe("#withoutValue()", () => {
-        test("with a null value", () => {
-            const withNewData = formValues.withValue("total.vat", 123)
-                .withoutValue("total.vat");
-            expect(withNewData.value("total.vat").value).toEqual(undefined);
-        })
+    test("#withoutValue()", () => {
+        const withNewData = formValues.withValue("total.vat", 123)
+            .withoutValue("total.vat");
+        expect(withNewData.value("total.vat").value).toBeUndefined();
     })
 
     describe("#withValues()", () => {
