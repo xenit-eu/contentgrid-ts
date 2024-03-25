@@ -32,6 +32,12 @@ export class HalFormValuesImpl<RS extends TypedRequestSpec<any, any>> implements
         return this.template.properties.map(property => this.value(property.name));
     }
 
+    public get valueMap() {
+        return Object.fromEntries(this.values
+            .filter(v => v.value !== undefined)
+            .map(v => [v.property.name, v.value!]));
+    }
+
     public value(propertyName: string): AnyHalFormValue {
         const property = this.template.property(propertyName);
         const value = this.valueMapping[property.name];

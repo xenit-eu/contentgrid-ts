@@ -17,6 +17,11 @@ export interface HalFormValues<RS extends TypedRequestSpec<any, any>> {
     readonly values: readonly AnyHalFormValue[];
 
     /**
+     * Object mapping HAL-FORMS property names to their respective value
+     */
+    readonly valueMap: HalFormValuesMap;
+
+    /**
      * Retrieve the value for a specific named HAL-FORMS property
      *
      * @param propertyName - The name of the HAL-FORMS property to retrieve a value for
@@ -50,7 +55,7 @@ export interface HalFormValues<RS extends TypedRequestSpec<any, any>> {
      * @param values - Mapping of HAL-FORMS property names to their new values
      * @return New value manager with the specified properties updated to their new values
      */
-    withValues(values: { [propertyName: string]: DefinedHalFormValue["value"] }): HalFormValues<RS>;
+    withValues(values: HalFormValuesMap): HalFormValues<RS>;
 }
 
 
@@ -94,3 +99,8 @@ export interface UndefinedHalFormValue {
  * A HAL-FORMS property that can either have a value or not have one
  */
 export type AnyHalFormValue = DefinedHalFormValue | UndefinedHalFormValue;
+
+/**
+ * Object mapping HAL-FORMS property names to their respective value
+ */
+export type HalFormValuesMap = Readonly<Record<string, DefinedHalFormValue["value"]>>;

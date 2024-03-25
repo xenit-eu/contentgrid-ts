@@ -153,6 +153,25 @@ describe("values", () => {
 
     })
 
+    describe("#valueMap", () => {
+        test("Default values", () => {
+            expect(formValues.valueMap).toEqual({
+                "name": "Jefke"
+            })
+        })
+        test("with other value types", () => {
+            const file = new File([], "example.jpg", {"type": "image/jpeg"});
+            expect(formValues
+                .withValue("total.net", 120)
+                .withValue("picture", file)
+                .valueMap).toEqual({
+                    name: "Jefke",
+                    "total.net": 120,
+                    picture: file
+                })
+        })
+    })
+
 })
 
 describe("HalFormValueTypeError", () => {
