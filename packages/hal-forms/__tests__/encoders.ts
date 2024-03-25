@@ -110,6 +110,13 @@ describe("Encoders.json()", () => {
             .toThrowError();
     })
 
+    test("Encodes using a custom content type if set on the form", () => {
+        const encoded = codecs.requireCodecFor(plainForm.withContentType("application/hal+json"))
+            .encode(plainFilledValues.values)
+
+        expect(encoded.headers.get("content-type")).toEqual("application/hal+json");
+    })
+
 })
 
 describe("Encoders.nestedJson()", () => {
