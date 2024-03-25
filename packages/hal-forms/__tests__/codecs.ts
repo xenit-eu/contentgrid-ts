@@ -1,6 +1,6 @@
 import { describe, expect, test } from "@jest/globals";
 import buildTemplate from "../src/builder";
-import { default as codecs, Encoders, HalFormsCodecNotAvailableError, HalFormsCodecs } from "../src/codecs";
+import { default as codecs, Encoders, HalFormsCodecNotAvailableError, HalFormsCodecPropertyTypeNotSupportedError, HalFormsCodecs } from "../src/codecs";
 import { HalFormsCodecImpl } from "../src/codecs/impl";
 import { createValues } from "../src/values";
 import { nestedJson } from "../src/codecs/encoders";
@@ -36,6 +36,12 @@ describe("HalFormsCodecs", () => {
                 .build();
             const c = empty.findCodecFor(form);
             expect(c).toBeNull();
+        })
+
+        test("throws when an unsupported property type is used", () => {
+            const fileForm = form.addProperty("file", p => p.withType("file"));
+            expect(() => codecs.findCodecFor(fileForm))
+                .toThrowError(new HalFormsCodecPropertyTypeNotSupportedError(fileForm, fileForm.property("file")));
         })
     });
 

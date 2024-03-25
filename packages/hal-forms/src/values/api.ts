@@ -85,7 +85,10 @@ export type DefinedHalFormValue = SpecificTypesHalFormValue | StringTypesHalForm
 /**
  * A HAL-FORMS property that does not have any value
  */
-export type UndefinedHalFormValue = TypedHalFormValue<HalFormsPropertyType, undefined>;
+export interface UndefinedHalFormValue {
+    readonly property: HalFormsProperty;
+    readonly value: undefined;
+}
 
 /**
  * A HAL-FORMS property that can either have a value or not have one

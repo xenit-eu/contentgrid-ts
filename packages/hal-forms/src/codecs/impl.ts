@@ -3,7 +3,7 @@ import { HalFormsTemplate } from "..";
 import { HalFormsCodec, HalFormsCodecMatcher, HalFormsCodecs, HalFormsCodecsBuilder, HalFormsCodecsMatchers } from "./api";
 import { HalFormsEncoder } from "./encoders/api";
 import { AnyHalFormValue } from "../values/api";
-import { HalFormsCodecNotAvailableError } from "./errors";
+import { HalFormsCodecNotAvailableError, HalFormsCodecPropertyTypeNotSupportedError } from "./errors";
 
 abstract class AbstractHalFormsCodecs implements HalFormsCodecs {
     abstract findCodecFor<T, R>(template: HalFormsTemplate<TypedRequestSpec<T, R>>): HalFormsCodec<T, R> | null;
@@ -26,10 +26,17 @@ class SingleEncoderHalFormsCodecs extends AbstractHalFormsCodecs {
     }
 
     public findCodecFor<T, R>(template: HalFormsTemplate<TypedRequestSpec<T, R>>): HalFormsCodec<T, R> | null {
-        if (this.matcher(template)) {
-            return new HalFormsCodecImpl(template, this.encoder);
+        if (!this.matcher(template)) {
+            return null;
         }
-        return null;
+
+        template.properties.forEach(property => {
+            if(!this.encoder.supportsProperty(property)) {
+                throw new HalFormsCodecPropertyTypeNotSupportedError(template, property);
+            }
+        });
+
+        return new HalFormsCodecImpl(template, this.encoder);
     }
 }
 

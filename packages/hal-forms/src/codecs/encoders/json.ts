@@ -2,12 +2,14 @@ import { Representation, TypedRequest, TypedRequestSpec, createRequest } from "@
 import { HalFormsProperty, HalFormsTemplate } from "../../api";
 import { AnyHalFormValue } from "../../values/api";
 import { HalFormsEncoder } from "./api";
+import { HalFormsPropertyType } from "../../_shape";
 
 /**
  * Encodes HAL-FORMS values as a JSON object
  *
  * The JSON object is created as a simple object mapping a HAL-FORMS property name to its value.
  * Nested objects are not supported.
+ * Files are not supported.
  */
 export function json(): HalFormsEncoder {
     return new JsonHalFormsEncoder(null);
@@ -18,6 +20,7 @@ export function json(): HalFormsEncoder {
  *
  * The JSON object is created as an object mapping a HAL-FORMS property name to their values.
  * Nested objects are supported; The separator character accesses nested JSON objects.
+ * Files are not supported.
  *
  * e.g. A HAL-FORM with properties `user.name`, `user.email` and `address` will be serialized as
  * ```
@@ -58,6 +61,10 @@ class JsonHalFormsEncoder implements HalFormsEncoder {
             },
             body: Representation.json(jsonObject as T)
         });
+    }
+
+    public supportsProperty(property: HalFormsProperty<unknown>): boolean {
+        return property.type !== HalFormsPropertyType.file;
     }
 
     private appendToJsonObject<T>(object: Partial<T>, key: string, value: AnyHalFormValue["value"], property: HalFormsProperty) {

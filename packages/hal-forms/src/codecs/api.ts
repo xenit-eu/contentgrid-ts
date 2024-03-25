@@ -30,6 +30,9 @@ export interface HalFormsCodecs {
      * @see {@link HalFormsCodecs#requireCodecFor} for the variant that throws an error when no codec is available
      *
      * @param template - The HAL-FORMS template to look up a codec for
+     *
+     * @throws {@link ./errors#HalFormsCodecPropertyTypeNotSupportedError} when the selected codec does not support a certain property
+     *
      * @return A codec if one is available, or null if no codec is available
      */
     findCodecFor<T, R>(template: HalFormsTemplate<TypedRequestSpec<T, R>>): HalFormsCodec<T, R> | null;
@@ -37,11 +40,12 @@ export interface HalFormsCodecs {
     /**
      * Require a codec for a HAL-FORMS template
      *
-     * @see {@link HalFormsCodecs#requireCodecFor} for the variant that throws an error when no codec is available
+     * @see {@link HalFormsCodecs#findCodecFor} for the variant that throws an error when no codec is available
      *
      * @param template - The HAL-FORMS template to look up a codec for
      *
      * @throws {@link ./errors#HalFormsCodecNotAvailableError} when no codec is available
+     * @throws {@link ./errors#HalFormsCodecPropertyTypeNotSupportedError} when the selected codec does not support a certain property
      *
      * @return A codec
      */
