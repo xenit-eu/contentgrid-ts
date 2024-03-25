@@ -2,7 +2,7 @@ import { describe, expect, test } from "@jest/globals";
 import buildTemplate from "../src/builder";
 import { default as codecs, Encoders, HalFormsCodecNotAvailableError, HalFormsCodecPropertyTypeNotSupportedError, HalFormsCodecs } from "../src/codecs";
 import { HalFormsCodecImpl } from "../src/codecs/impl";
-import { nestedJson } from "../src/codecs/encoders";
+import { nestedJson, urlencodedQuerystring } from "../src/codecs/encoders";
 
 const form = buildTemplate("POST", "http://localhost/invoices")
     .withContentType("application/json")
@@ -80,12 +80,14 @@ describe("Default codecs", () => {
 
     test("form method=GET, without contentType", () => {
         const form = buildTemplate("GET", "/");
-        expect(codecs.findCodecFor(form)).toBeNull();
+        expect(codecs.findCodecFor(form)).toEqual(new HalFormsCodecImpl(form, urlencodedQuerystring()));
     })
 
     test("form method=GET, contentType=application/json", () => {
+        // Note: the HAL-FORMS spec requires that all forms with methods GET, DELETE & HEAD encode properties in the query string
+        // It does not matter which content type is set for the form
         const form = buildTemplate("GET", "/")
             .withContentType("application/json");
-        expect(codecs.findCodecFor(form)).toBeNull();
+        expect(codecs.findCodecFor(form)).toEqual(new HalFormsCodecImpl(form, urlencodedQuerystring()));
     })
 })

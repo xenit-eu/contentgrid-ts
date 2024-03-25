@@ -365,3 +365,50 @@ describe("Encoders.urlencodedForm()", () => {
     })
 
 })
+
+describe("Encoders.urlencodedQuerystring()", () => {
+    const codecs = HalFormsCodecs.builder()
+        .registerEncoder(() => true, Encoders.urlencodedQuerystring())
+        .build();
+
+
+    test("Encodes values to query string", () => {
+        const getTemplate = buildTemplate("GET", "http://localhost/invoices")
+            .withContentType("application/x-www-form-urlencoded")
+            .addProperty("abc", b => b);
+        const value = createValues(getTemplate)
+            .withValue("abc", "def ghi");
+        const encoded = codecs.requireCodecFor(getTemplate)
+            .encode(value);
+
+        expect(encoded.url).toEqual("http://localhost/invoices?abc=def+ghi")
+        expect(encoded.body).toBeNull();
+    })
+
+    test("Encodes values to query string; appending to existing query string", () => {
+        const getTemplate = buildTemplate("GET", "http://localhost/invoices?a=d&z=%2F")
+            .withContentType("application/x-www-form-urlencoded")
+            .addProperty("abc", b => b);
+        const value = createValues(getTemplate)
+            .withValue("abc", "def ghi%");
+        const encoded = codecs.requireCodecFor(getTemplate)
+            .encode(value);
+
+        expect(encoded.url).toEqual("http://localhost/invoices?a=d&z=%2F&abc=def+ghi%25")
+        expect(encoded.body).toBeNull();
+    })
+
+
+    test("Refuses to encode files", () => {
+        expect(() => codecs.requireCodecFor(fileForm)
+            .encode(fileFilledValues))
+            .toThrowError();
+    })
+
+    test("Refuses to encode files, even when they are not filled in", () => {
+        expect(() => codecs.requireCodecFor(fileForm)
+            .encode(fileEmptyValues))
+            .toThrowError();
+    })
+
+})

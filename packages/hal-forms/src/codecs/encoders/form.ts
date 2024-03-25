@@ -25,6 +25,16 @@ export function urlencodedForm(): HalFormsEncoder {
     return new UrlencodedFormEncoder();
 }
 
+/**
+ * Encodes HAL-FORMS as a urlencoded query string, sending data in the request body
+ *
+ * This encoding format serializes to string: Dates, numbers and booleans will be converted to strings
+ * Files are not supported.
+ */
+export function urlencodedQuerystring(): HalFormsEncoder {
+    return new UrlEncodedQueryStringEncoder();
+}
+
 type FormLike = FormData | URLSearchParams;
 
 abstract class AbstractFormDataEncoder<F extends FormLike> implements HalFormsEncoder {
@@ -37,16 +47,21 @@ abstract class AbstractFormDataEncoder<F extends FormLike> implements HalFormsEn
             })
         })
 
-        return createRequest(template.request, {
-            // content-type header is set automatically
-            body: Representation.createUnsafe(formData),
-        })
+        return this.createRequest(template.request, formData);
+
     }
 
     public abstract supportsProperty(property: HalFormsProperty<unknown>): boolean;
 
     protected abstract createData(): F;
-    protected abstract appendToData(form: F, property: HalFormsProperty, value: string | Blob): undefined;
+    protected abstract appendToData(form: F, property: HalFormsProperty, value: string | Blob): void;
+
+    protected createRequest<T, R>(spec: TypedRequestSpec<T, R>, form: F) {
+        return createRequest(spec, {
+            // content-type header is set automatically
+            body: Representation.createUnsafe(form),
+        })
+    }
 
     private toValues(value: AnyHalFormValue): readonly (string|Blob)[] {
         const v = value.value;
@@ -85,8 +100,8 @@ class FormDataEncoder extends AbstractFormDataEncoder<FormData> {
 
 }
 
-
 class UrlencodedFormEncoder extends AbstractFormDataEncoder<URLSearchParams> {
+
     protected override createData(): URLSearchParams {
         return new URLSearchParams();
     }
@@ -101,5 +116,17 @@ class UrlencodedFormEncoder extends AbstractFormDataEncoder<URLSearchParams> {
     public override supportsProperty(property: HalFormsProperty<unknown>): boolean {
         return property.type !== HalFormsPropertyType.file;
     }
+}
 
+class UrlEncodedQueryStringEncoder extends UrlencodedFormEncoder {
+    protected override createRequest<T, R>(spec: TypedRequestSpec<T, R>, form: URLSearchParams): TypedRequest<T, R> {
+        const url = new URL(spec.url);
+        form.forEach((value, key) => url.searchParams.append(key, value));
+        return createRequest({
+            ...spec,
+            url: url.toString(),
+        }, {
+
+        });
+    }
 }
