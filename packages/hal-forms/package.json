@@ -21,6 +21,21 @@
       "types": "./build/shape.d.ts",
       "import": "./build/shape.mjs",
       "default": "./build/shape.js"
+    },
+    "./values": {
+      "types": "./build/values/index.d.ts",
+      "import": "./build/values/index.mjs",
+      "default": "./build/values/index.js"
+    },
+    "./codecs": {
+      "types": "./build/codecs/index.d.ts",
+      "import": "./build/codecs/index.mjs",
+      "default": "./build/codecs/index.js"
+    },
+    "./codecs/encoders": {
+      "types": "./build/codecs/encoders/index.d.ts",
+      "import": "./build/codecs/encoders/index.mjs",
+      "default": "./build/codecs/encoders/index.js"
     }
   },
   "license": "MIT",

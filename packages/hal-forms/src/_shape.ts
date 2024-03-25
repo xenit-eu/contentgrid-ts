@@ -6,6 +6,8 @@ declare const _requestType: unique symbol;
 export interface HalFormsTemplateShape<BodyType = unknown, ResponseType = unknown> {
     readonly method: string;
     readonly target?: string;
+    readonly contentType?: string;
+    readonly title?: string;
     readonly properties: readonly HalFormsPropertyShape[];
     readonly [_requestType]?: TypedRequestSpec<BodyType, ResponseType>;
 }
@@ -16,14 +18,23 @@ export enum HalFormsPropertyType {
     hidden = "hidden",
     text = "text",
     url = "url",
+    email = "email",
+    date = "date",
+    time = "time",
+    datetime = "datetime",
+    datetime_local = "datetime-local",
     number = "number",
+    range = "range",
     checkbox = "checkbox",
-    radio = "radio"
+    radio = "radio",
+    file = "file",
 }
+
+export type HalFormsPropertyValue = string | number | boolean | null | readonly string[] | readonly number[] | readonly boolean[];
 
 export interface HalFormsPropertyShape<OptionType = any> {
     readonly name: string;
-    readonly type?: `${HalFormsPropertyType}` | `${HalFormsPropertyType}[]`;
+    readonly type?: `${HalFormsPropertyType}`;
     readonly required?: boolean;
     readonly readOnly?: boolean;
     readonly options?: HalFormsPropertyOptionsShape<OptionType>;
@@ -31,6 +42,7 @@ export interface HalFormsPropertyShape<OptionType = any> {
     readonly minLength?: number;
     readonly maxLength?: number;
     readonly prompt?: string;
+    readonly value?: HalFormsPropertyValue;
 }
 
 export interface HalFormsPropertyOptionsShape<T = unknown> {

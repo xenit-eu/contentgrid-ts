@@ -19,6 +19,7 @@ describe("resolveTemplate", () => {
         _templates: {
             ["create-form"]: {
                 method: "GET",
+                title: "Create new",
                 target: "http://localhost/create",
                 properties: [
                     {
@@ -56,6 +57,7 @@ describe("resolveTemplate", () => {
             },
             other: {
                 method: "POST",
+                contentType: "application/x-www-form-urlencoded",
                 properties: [
                     {
                         name: "ZZZ",
@@ -73,13 +75,15 @@ describe("resolveTemplate", () => {
             method: "GET",
             url: "http://localhost/create"
         })
+        expect(template?.contentType).toEqual("application/json");
+        expect(template?.title).toEqual("Create new");
         expect(template?.properties.length).toEqual(3);
         const propAbc = template!.property("abc");
         expect(template?.property("abc").readOnly).toBe(false);
         expect(template?.property("abc").type).toEqual("text");
         const abcOpts = propAbc.options;
-        expect(abcOpts.isInline()).toBe(true);
-        expect(abcOpts.loadOptions(() => { throw new Error("Not implemented") }))
+        expect(abcOpts!.isInline()).toBe(true);
+        expect(abcOpts!.loadOptions(() => { throw new Error("Not implemented") }))
             .resolves
             .toEqual([
                 {
@@ -92,18 +96,18 @@ describe("resolveTemplate", () => {
                 }
             ])
 
-        if(abcOpts.isInline()) {
+        if(abcOpts!.isInline()) {
             expect(abcOpts.inline.length).toBe(2);
         }
 
         expect(template?.property("def").readOnly).toBe(false);
         expect(template?.property("def").type).toBe("number");
         const defOpts = template!.property("def").options;
-        expect(defOpts.isRemote()).toBe(true);
+        expect(defOpts!.isRemote()).toBe(true);
 
         const mockLoad = jest.fn(() => Promise.resolve(["1", "2", "3"]));
 
-        expect(defOpts.loadOptions(mockLoad))
+        expect(defOpts!.loadOptions(mockLoad))
             .resolves
             .toEqual([
                 {
@@ -120,7 +124,7 @@ describe("resolveTemplate", () => {
                 }
             ]);
 
-        if(abcOpts.isRemote()) {
+        if(abcOpts!.isRemote()) {
             expect(mockLoad.mock.lastCall).toHaveBeenCalledWith(abcOpts.link);
             expect(abcOpts.link.href).toEqual("http://localhost/numbers?q=4");
         }
@@ -135,6 +139,8 @@ describe("resolveTemplate", () => {
             method: "POST",
             url: "http://localhost/item/4"
         })
+        expect(template?.title).toBeUndefined();
+        expect(template?.contentType).toEqual("application/x-www-form-urlencoded")
         expect(template?.properties.length).toEqual(1);
         expect(template?.property("ZZZ").required).toBe(true);
     })
