@@ -1,6 +1,7 @@
 import { TypedRequestSpec } from "@contentgrid/typed-fetch";
 import { HalFormsProperty } from "../api";
 import { HalFormsPropertyType } from "../_shape";
+import { HalFormValuesImpl } from "./impl";
 
 /**
  * Value manager for a HAL-FORMS template
@@ -58,6 +59,11 @@ export interface HalFormValues<RS extends TypedRequestSpec<any, any>> {
     withValues(values: HalFormValuesMap): HalFormValues<RS>;
 }
 
+export namespace HalFormValues {
+    export function isInstance(object: any): object is HalFormValues<any> {
+        return object instanceof HalFormValuesImpl;
+    }
+}
 
 /**
  * A value for a HAL-FORMS property of a certain type

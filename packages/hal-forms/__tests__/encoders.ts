@@ -58,6 +58,7 @@ const fileForm = plainForm
 
 const fileEmptyValues = createValues(fileForm);
 const fileFilledValues = fileEmptyValues
+    .withValues(plainFilledValues.valueMap)
     .withValue("file", plainTextFile);
 
 describe("Encoders.json()", () => {
@@ -67,7 +68,7 @@ describe("Encoders.json()", () => {
 
     test("Encodes default values", () => {
         const encoded = codecs.requireCodecFor(plainForm)
-        .encode(plainEmptyValues.values);
+        .encode(plainEmptyValues);
 
         expect(encoded).toBeInstanceOf(Request);
 
@@ -83,7 +84,7 @@ describe("Encoders.json()", () => {
 
     test("Encodes nested values as flat JSON", () => {
         const encoded = codecs.requireCodecFor(plainForm)
-            .encode(plainFilledValues.values);
+            .encode(plainFilledValues);
 
         expect(encoded.headers.get("content-type")).toEqual("application/json");
         expect(encoded.json())
@@ -100,19 +101,19 @@ describe("Encoders.json()", () => {
 
     test("Refuses to encode files", () => {
         expect(() => codecs.requireCodecFor(fileForm)
-            .encode(fileFilledValues.values))
+            .encode(fileFilledValues))
             .toThrowError();
     })
 
     test("Refuses to encode files, even when they are not filled in", () => {
         expect(() => codecs.requireCodecFor(fileForm)
-            .encode(fileEmptyValues.values))
+            .encode(fileEmptyValues))
             .toThrowError();
     })
 
     test("Encodes using a custom content type if set on the form", () => {
         const encoded = codecs.requireCodecFor(plainForm.withContentType("application/hal+json"))
-            .encode(plainFilledValues.values)
+            .encode(plainFilledValues)
 
         expect(encoded.headers.get("content-type")).toEqual("application/hal+json");
     })
@@ -126,7 +127,7 @@ describe("Encoders.nestedJson()", () => {
 
     test("Encodes default values", () => {
         const encoded = codecs.requireCodecFor(plainForm)
-        .encode(plainEmptyValues.values);
+        .encode(plainEmptyValues);
 
         expect(encoded).toBeInstanceOf(Request);
         expect(encoded.headers.get("content-type")).toEqual("application/json");
@@ -141,7 +142,7 @@ describe("Encoders.nestedJson()", () => {
 
     test("Encodes nested values as JSON", () => {
         const encoded = codecs.requireCodecFor(plainForm)
-            .encode(plainFilledValues.values);
+            .encode(plainFilledValues);
 
         expect(encoded.headers.get("content-type")).toEqual("application/json");
 
@@ -161,12 +162,12 @@ describe("Encoders.nestedJson()", () => {
 
     test("Refuses to encode files", () => {
         expect(() => codecs.requireCodecFor(fileForm)
-            .encode(fileFilledValues.values))
+            .encode(fileFilledValues))
             .toThrowError();
     })
     test("Refuses to encode files, even when they are not filled in", () => {
         expect(() => codecs.requireCodecFor(fileForm)
-            .encode(fileEmptyValues.values))
+            .encode(fileEmptyValues))
             .toThrowError();
     })
 

@@ -1,8 +1,8 @@
 import { TypedRequest, TypedRequestSpec } from "@contentgrid/typed-fetch";
 import { HalFormsTemplate } from "../api";
-import { AnyHalFormValue } from "../values";
 import { HalFormsEncoder } from "./encoders";
 import HalFormsCodecsImpl from "./impl";
+import { HalFormValues, HalFormValuesMap } from "../values/api";
 
 /**
  * HAL-FORMS codec
@@ -11,11 +11,18 @@ import HalFormsCodecsImpl from "./impl";
  */
 export interface HalFormsCodec<T, R> {
     /**
+     * Encode a javascript object into a request
+     * @param values - The HAL-FORMS values to encode
+     * @returns A {@link TypedRequest} that can be sent with {@link fetch}
+     */
+    encode(values: HalFormValuesMap): TypedRequest<T, R>
+
+    /**
      * Encode HAL-FORMS values into a request
      * @param values - The HAL-FORMS values to encode
      * @returns A {@link TypedRequest} that can be sent with {@link fetch}
      */
-    encode(values: readonly AnyHalFormValue[]): TypedRequest<T, R>
+    encode(values: HalFormValues<TypedRequestSpec<T, R>>): TypedRequest<T, R>
 }
 
 /**
