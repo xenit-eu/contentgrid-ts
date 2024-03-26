@@ -1,7 +1,9 @@
 import { describe, expect, test } from "@jest/globals";
 import buildTemplate from "../src/builder";
 import { default as codecs, Encoders, HalFormsCodecNotAvailableError, HalFormsCodecs } from "../src/codecs";
+import { HalFormsCodecImpl } from "../src/codecs/impl";
 import { createValues } from "../src/values";
+import { nestedJson } from "../src/codecs/encoders";
 
 const form = buildTemplate("POST", "http://localhost/invoices")
     .withContentType("application/json")
@@ -50,6 +52,36 @@ describe("HalFormsCodecs", () => {
                 .toThrowError(new HalFormsCodecNotAvailableError(form));
         })
 
+    })
+})
+
+describe("Default codecs", () => {
+    test("form method=POST, without contentType", () => {
+        const form = buildTemplate("POST", "/");
+        expect(codecs.findCodecFor(form)).toEqual(new HalFormsCodecImpl(form, nestedJson()));
+    })
+
+    test("form method=POST, contentType=application/json", () => {
+        const form = buildTemplate("POST", "/")
+            .withContentType("application/json");
+        expect(codecs.findCodecFor(form)).toEqual(new HalFormsCodecImpl(form, nestedJson()));
+    });
+
+    test("form method=POST, contentType=text/plain", () => {
+        const form = buildTemplate("POST", "/")
+            .withContentType("text/plain");
+        expect(codecs.findCodecFor(form)).toBeNull();
+    });
+
+    test("form method=GET, without contentType", () => {
+        const form = buildTemplate("GET", "/");
+        expect(codecs.findCodecFor(form)).toBeNull();
+    })
+
+    test("form method=GET, contentType=application/json", () => {
+        const form = buildTemplate("GET", "/")
+            .withContentType("application/json");
+        expect(codecs.findCodecFor(form)).toBeNull();
     })
 })
 
@@ -103,6 +135,7 @@ describe("Encoders.nestedJson()", () => {
         const encoded = codecs.requireCodecFor(form).encode(values.values);
 
         expect(encoded).toBeInstanceOf(Request);
+        expect(encoded.headers.get("content-type")).toEqual("application/json")
 
         expect(encoded.json())
             .resolves

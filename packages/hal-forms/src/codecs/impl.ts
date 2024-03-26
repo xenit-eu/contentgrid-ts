@@ -1,6 +1,6 @@
 import { TypedRequest, TypedRequestSpec } from "@contentgrid/typed-fetch";
 import { HalFormsTemplate } from "..";
-import { HalFormsCodec, HalFormsCodecs, HalFormsCodecsBuilder } from "./api";
+import { HalFormsCodec, HalFormsCodecMatcher, HalFormsCodecs, HalFormsCodecsBuilder, HalFormsCodecsMatchers } from "./api";
 import { HalFormsEncoder } from "./encoders/api";
 import { AnyHalFormValue } from "../values/api";
 import { HalFormsCodecNotAvailableError } from "./errors";
@@ -19,21 +19,22 @@ abstract class AbstractHalFormsCodecs implements HalFormsCodecs {
 
 class SingleEncoderHalFormsCodecs extends AbstractHalFormsCodecs {
     public constructor(
-        private readonly contentType: string,
+        private readonly matcher: HalFormsCodecMatcher,
         private readonly encoder: HalFormsEncoder
     ) {
         super();
     }
 
     public findCodecFor<T, R>(template: HalFormsTemplate<TypedRequestSpec<T, R>>): HalFormsCodec<T, R> | null {
-        if(template.contentType === this.contentType) {
+        if (this.matcher(template)) {
             return new HalFormsCodecImpl(template, this.encoder);
         }
         return null;
     }
 }
 
-class HalFormsCodecImpl<T, R> implements HalFormsCodec<T, R> {
+// @internal
+export class HalFormsCodecImpl<T, R> implements HalFormsCodec<T, R> {
     public constructor(
         private readonly template: HalFormsTemplate<TypedRequestSpec<T, R>>,
         private readonly encoder: HalFormsEncoder
@@ -47,11 +48,18 @@ class HalFormsCodecImpl<T, R> implements HalFormsCodec<T, R> {
 
 }
 
+// @internal
 export default class HalFormsCodecsBuilderImpl extends AbstractHalFormsCodecs implements HalFormsCodecs, HalFormsCodecsBuilder {
     private readonly codecs: HalFormsCodecs[] = [];
 
-    public registerEncoder(contentType: string, encoder: HalFormsEncoder): this {
-        return this.registerCodecs(new SingleEncoderHalFormsCodecs(contentType, encoder));
+    public registerEncoder(matcher: string | HalFormsCodecMatcher, encoder: HalFormsEncoder): this {
+        if(typeof matcher === "string") {
+            matcher = HalFormsCodecsMatchers.all(
+                HalFormsCodecsMatchers.contentType(matcher),
+                HalFormsCodecsMatchers.encodedToRequestBody()
+            );
+        }
+        return this.registerCodecs(new SingleEncoderHalFormsCodecs(matcher, encoder));
     }
 
     public registerCodecs(codecs: HalFormsCodecs): this {

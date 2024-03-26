@@ -75,7 +75,7 @@ describe("resolveTemplate", () => {
             method: "GET",
             url: "http://localhost/create"
         })
-        expect(template?.contentType).toEqual("application/json");
+        expect(template?.contentType).toBeUndefined();
         expect(template?.title).toEqual("Create new");
         expect(template?.properties.length).toEqual(3);
         const propAbc = template!.property("abc");

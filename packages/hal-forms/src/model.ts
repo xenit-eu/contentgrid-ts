@@ -17,7 +17,7 @@ class HalFormsTemplateImpl<Body, Response> implements HalFormsTemplate<TypedRequ
     }
 
     public get contentType() {
-        return this.model.contentType ?? "application/json";
+        return this.model.contentType;
     }
 
     public get title() {
