@@ -8,7 +8,7 @@ export class HalFormsTemplateBuilder<Body, Response> implements HalFormsTemplate
     private constructor(
         public readonly name: string,
         public readonly request: TypedRequestSpec<Body, Response>,
-        public readonly contentType: string = "application/json",
+        public readonly contentType: string | undefined = undefined,
         public readonly properties: HalFormsProperty[] = []
     ) {
 
@@ -62,7 +62,7 @@ export class HalFormsTemplateBuilder<Body, Response> implements HalFormsTemplate
         return new HalFormsTemplateBuilder(this.name, this.request, this.contentType, this.properties.concat([builtProperty]))
     }
 
-    public withContentType(contentType: string):  HalFormsTemplateBuilder<Body, Response> {
+    public withContentType(contentType: string | undefined): HalFormsTemplateBuilder<Body, Response> {
         return new HalFormsTemplateBuilder(this.name, this.request, contentType, this.properties)
     }
 

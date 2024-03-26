@@ -53,6 +53,9 @@ class JsonHalFormsEncoder implements HalFormsEncoder {
         })
 
         return createRequest(template.request, {
+            headers: {
+                "Content-Type": template.contentType ?? "application/json"
+            },
             body: Representation.json(jsonObject as T)
         });
     }
