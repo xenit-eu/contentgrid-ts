@@ -3,7 +3,7 @@ export * from "./errors";
 export * as Encoders from "./encoders";
 
 import { HalFormsCodecs, HalFormsCodecsMatchers } from "./api";
-import { nestedJson } from "./encoders";
+import { multipartForm, nestedJson, uriList, urlencodedForm, urlencodedQuerystring } from "./encoders";
 
 /**
  * Default HAL-FORMS codecs
@@ -16,5 +16,12 @@ export default HalFormsCodecs.builder()
         ),
         nestedJson()
     )
+    .registerEncoder(
+        HalFormsCodecsMatchers.encodedToRequestUrl(),
+        urlencodedQuerystring()
+    )
     .registerEncoder("application/json", nestedJson())
+    .registerEncoder("text/uri-list", uriList())
+    .registerEncoder("multipart/form-data", multipartForm())
+    .registerEncoder("application/x-www-form-urlencoded", urlencodedForm())
     .build();

@@ -1,6 +1,7 @@
 import { TypedRequestSpec } from "@contentgrid/typed-fetch";
 import { HalFormsProperty } from "../api";
 import { HalFormsPropertyType } from "../_shape";
+import { HalFormValuesImpl } from "./impl";
 
 /**
  * Value manager for a HAL-FORMS template
@@ -15,6 +16,11 @@ export interface HalFormValues<RS extends TypedRequestSpec<any, any>> {
      * List of all HAL-FORMS properties and their respective value
      */
     readonly values: readonly AnyHalFormValue[];
+
+    /**
+     * Object mapping HAL-FORMS property names to their respective value
+     */
+    readonly valueMap: HalFormValuesMap;
 
     /**
      * Retrieve the value for a specific named HAL-FORMS property
@@ -50,9 +56,14 @@ export interface HalFormValues<RS extends TypedRequestSpec<any, any>> {
      * @param values - Mapping of HAL-FORMS property names to their new values
      * @return New value manager with the specified properties updated to their new values
      */
-    withValues(values: { [propertyName: string]: DefinedHalFormValue["value"] }): HalFormValues<RS>;
+    withValues(values: HalFormValuesMap): HalFormValues<RS>;
 }
 
+export namespace HalFormValues {
+    export function isInstance(object: any): object is HalFormValues<any> {
+        return object instanceof HalFormValuesImpl;
+    }
+}
 
 /**
  * A value for a HAL-FORMS property of a certain type
@@ -85,9 +96,17 @@ export type DefinedHalFormValue = SpecificTypesHalFormValue | StringTypesHalForm
 /**
  * A HAL-FORMS property that does not have any value
  */
-export type UndefinedHalFormValue = TypedHalFormValue<HalFormsPropertyType, undefined>;
+export interface UndefinedHalFormValue {
+    readonly property: HalFormsProperty;
+    readonly value: undefined;
+}
 
 /**
  * A HAL-FORMS property that can either have a value or not have one
  */
 export type AnyHalFormValue = DefinedHalFormValue | UndefinedHalFormValue;
+
+/**
+ * Object mapping HAL-FORMS property names to their respective value
+ */
+export type HalFormValuesMap = Readonly<Record<string, DefinedHalFormValue["value"]>>;

@@ -1,5 +1,5 @@
 import { TypedRequest, TypedRequestSpec } from "@contentgrid/typed-fetch";
-import { HalFormsTemplate } from "../../api";
+import { HalFormsProperty, HalFormsTemplate } from "../../api";
 import { AnyHalFormValue } from "../../values";
 
 /**
@@ -18,4 +18,11 @@ export interface HalFormsEncoder {
      * @param values - The HAL-FORMS values to encode
      */
     encode<T, R>(template: HalFormsTemplate<TypedRequestSpec<T, R>>, values: readonly AnyHalFormValue[]): TypedRequest<T, R>;
+
+    /**
+     * Checks if this encoder supports encoding a certain HAL-FORMS property
+     *
+     * @param property - HAL-FORMS property to check support for
+     */
+    supportsProperty(property: HalFormsProperty): boolean;
 }

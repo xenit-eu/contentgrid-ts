@@ -2,8 +2,8 @@ import { TypedRequest, TypedRequestSpec } from "@contentgrid/typed-fetch";
 import { HalFormsTemplate } from "..";
 import { HalFormsCodec, HalFormsCodecMatcher, HalFormsCodecs, HalFormsCodecsBuilder, HalFormsCodecsMatchers } from "./api";
 import { HalFormsEncoder } from "./encoders/api";
-import { AnyHalFormValue } from "../values/api";
-import { HalFormsCodecNotAvailableError } from "./errors";
+import { HalFormsCodecNotAvailableError, HalFormsCodecPropertyTypeNotSupportedError } from "./errors";
+import { HalFormValues, HalFormValuesMap, createValues } from "../values";
 
 abstract class AbstractHalFormsCodecs implements HalFormsCodecs {
     abstract findCodecFor<T, R>(template: HalFormsTemplate<TypedRequestSpec<T, R>>): HalFormsCodec<T, R> | null;
@@ -26,10 +26,17 @@ class SingleEncoderHalFormsCodecs extends AbstractHalFormsCodecs {
     }
 
     public findCodecFor<T, R>(template: HalFormsTemplate<TypedRequestSpec<T, R>>): HalFormsCodec<T, R> | null {
-        if (this.matcher(template)) {
-            return new HalFormsCodecImpl(template, this.encoder);
+        if (!this.matcher(template)) {
+            return null;
         }
-        return null;
+
+        template.properties.forEach(property => {
+            if(!this.encoder.supportsProperty(property)) {
+                throw new HalFormsCodecPropertyTypeNotSupportedError(template, property);
+            }
+        });
+
+        return new HalFormsCodecImpl(template, this.encoder);
     }
 }
 
@@ -42,8 +49,12 @@ export class HalFormsCodecImpl<T, R> implements HalFormsCodec<T, R> {
 
     }
 
-    public encode(values: readonly AnyHalFormValue[]): TypedRequest<T, R> {
-        return this.encoder.encode(this.template, values);
+    public encode(values: HalFormValuesMap | HalFormValues<TypedRequest<T, R>>): TypedRequest<T, R> {
+        if(!HalFormValues.isInstance(values)) {
+            values = createValues(this.template)
+                .withValues(values);
+        }
+        return this.encoder.encode(this.template, values.values);
     }
 
 }
@@ -80,4 +91,5 @@ export default class HalFormsCodecsBuilderImpl extends AbstractHalFormsCodecs im
         }
         return null;
     }
+
 }
