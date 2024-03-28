@@ -1,0 +1,49 @@
+{
+  "name": "@contentgrid/fetch-hooks",
+  "version": "0.0.1-alpha.0",
+  "description": "Insert hooks before/after fetch()",
+  "keywords": ["fetch", "typescript", "hooks"],
+  "main": "./build/index.js",
+  "module": "./build/index.mjs",
+  "types": "./build/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "import": "./build/index.mjs",
+      "default": "./build/index.js"
+    },
+    "./request": {
+      "types": "./build/request.d.ts",
+      "import": "./build/request.mjs",
+      "default": "./build/request.js"
+    },
+    "./value-provider": {
+      "types": "./build/value-provider.d.ts",
+      "import": "./build/value-provider.mjs",
+      "default": "./build/value-provider.js"
+    }
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@babel/runtime": "^7.22.10",
+    "tslib": "^2.6.1"
+  },
+  "scripts": {
+    "prepare": "rollup -c",
+    "test": "jest"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "build"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xenit-eu/contentgrid-ts.git",
+    "directory": "packages/fetch-hooks"
+  },
+  "devDependencies": {
+    "fetch-mock": "^9.11.0"
+  }
+}
