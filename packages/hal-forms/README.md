@@ -83,6 +83,15 @@ After collecting user input, you probably want to send a request to the backend 
 
 The `@contentgrid/hal-forms/codecs` sub-package encodes the values according to the content-type required by the HAL-FORMS template.
 
+A default set of codecs is available, but you can also create your own set of codecs using `HalFormsCodecs.builder()`.
+
+The default set of codecs includes:
+ * Encoding as request parameters for GET, HEAD and DELETE HTTP methods
+ * "Nested" JSON encoding: form properties containing `.` are mapped to nested objects
+ * Simple forms (`x-www-form-urlencoded`)
+ * Multipart forms, for file upload (`multipart/form-data`)
+ * `text/uri-list` for forms containing only URIs
+
 <details>
 
 <summary>Code example for encoding form values with codecs</summary>
