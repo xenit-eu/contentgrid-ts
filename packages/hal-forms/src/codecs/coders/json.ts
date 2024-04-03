@@ -1,8 +1,9 @@
 import { Representation, TypedRequest, TypedRequestSpec, createRequest } from "@contentgrid/typed-fetch";
 import { HalFormsProperty, HalFormsTemplate } from "../../api";
-import { AnyHalFormValue } from "../../values/api";
-import { HalFormsEncoder } from "./api";
+import { EncodedHalFormsRepresentation, HalFormsDecoder, HalFormsEncoder } from "./api";
 import { HalFormsPropertyType } from "../../_shape";
+import { createValues, AnyHalFormValue, HalFormValues } from "../../values";
+import { HalFormsDecoderRepresentationNotSupportedError } from "..";
 
 /**
  * Encodes HAL-FORMS values as a JSON object
@@ -11,8 +12,8 @@ import { HalFormsPropertyType } from "../../_shape";
  * Nested objects are not supported.
  * Files are not supported.
  */
-export function json(): HalFormsEncoder {
-    return new JsonHalFormsEncoder(null);
+export function json(): HalFormsEncoder & HalFormsDecoder {
+    return new JsonHalFormsCoder(null);
 }
 
 /**
@@ -36,14 +37,14 @@ export function json(): HalFormsEncoder {
  *
  * @param separatorCharacter - Separator character; must be exactly one character long
  */
-export function nestedJson(separatorCharacter: string = "."): HalFormsEncoder {
+export function nestedJson(separatorCharacter: string = "."): HalFormsEncoder & HalFormsDecoder {
     if (separatorCharacter.length !== 1) {
         throw new Error(`Nested property separator must be null or a string of length 1; got "${separatorCharacter}"`)
     }
-    return new JsonHalFormsEncoder(separatorCharacter);
+    return new JsonHalFormsCoder(separatorCharacter);
 }
 
-class JsonHalFormsEncoder implements HalFormsEncoder {
+class JsonHalFormsCoder implements HalFormsEncoder, HalFormsDecoder {
 
     public constructor(private nestedObjectSeparator: string | null) {
     }
@@ -66,6 +67,32 @@ class JsonHalFormsEncoder implements HalFormsEncoder {
     public supportsProperty(property: HalFormsProperty<unknown>): boolean {
         return property.type !== HalFormsPropertyType.file;
     }
+
+    public supportsRepresentation(data: EncodedHalFormsRepresentation<any>): boolean {
+        try {
+            return typeof tryDecodeJson(data) === "object";
+        } catch(e) {
+            return false;
+        }
+    }
+
+    public decode<T, R>(template: HalFormsTemplate<TypedRequestSpec<T, R>>, data: EncodedHalFormsRepresentation<T>): HalFormValues<TypedRequestSpec<T, R>> {
+        const decoded = tryDecodeJson(data);
+        let values = createValues(template);
+
+        for(const property of template.properties) {
+            const val = this.safeReadProperty(decoded, property.name);
+            if(val !== undefined && val !== null) {
+                values = values.withValue(property.name, val);
+            } else {
+                values = values.withoutValue(property.name);
+            }
+        }
+
+        return values;
+    }
+
+
 
     private appendToJsonObject<T>(object: Partial<T>, key: string, value: AnyHalFormValue["value"], property: HalFormsProperty) {
         if(value === undefined) {
@@ -96,4 +123,28 @@ class JsonHalFormsEncoder implements HalFormsEncoder {
         object[key] = value;
     }
 
+    private safeReadProperty(data: Record<string, any>, propertyName: string): any {
+        if(typeof data !== "object") {
+            return undefined;
+        }
+
+        if (this.nestedObjectSeparator === null || !propertyName.includes(this.nestedObjectSeparator)) {
+            return data[propertyName];
+        }
+
+        const [firstPart, nextParts] = propertyName.split(this.nestedObjectSeparator, 2);
+        return this.safeReadProperty(data[firstPart as string] ?? {}, nextParts as string);
+    }
+
+}
+
+function tryDecodeJson(repr: EncodedHalFormsRepresentation<any>): Record<string, any> {
+    if(typeof repr.body === "object") {
+        // This is an already decoded object
+        return repr.body;
+    } else if(typeof repr.body === "string") {
+        return JSON.parse(repr.body);
+    } else {
+        throw new HalFormsDecoderRepresentationNotSupportedError(repr);
+    }
 }

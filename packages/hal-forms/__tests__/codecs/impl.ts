@@ -1,8 +1,8 @@
 import { describe, expect, test } from "@jest/globals";
-import buildTemplate from "../src/builder";
-import { default as codecs, Encoders, HalFormsCodecNotAvailableError, HalFormsCodecPropertyTypeNotSupportedError, HalFormsCodecs } from "../src/codecs";
-import { HalFormsCodecImpl } from "../src/codecs/impl";
-import { nestedJson, urlencodedQuerystring } from "../src/codecs/encoders";
+import buildTemplate from "../../src/builder";
+import { default as codecs, Coders, HalFormsCodecNotAvailableError, HalFormsCodecPropertyTypeNotSupportedError, HalFormsCodecs } from "../../src/codecs";
+import { EncodedHalFormsRepresentation, nestedJson, urlencodedQuerystring } from "../../src/codecs/coders";
+import { Representation } from "@contentgrid/typed-fetch";
 
 const form = buildTemplate("POST", "http://localhost/invoices")
     .withContentType("application/json")
@@ -31,7 +31,7 @@ describe("HalFormsCodecs", () => {
 
         test("does not find a codec", () => {
             const empty = HalFormsCodecs.builder()
-                .registerEncoder("example/json", Encoders.json())
+                .registerEncoder("example/json", Coders.json())
                 .build();
             const c = empty.findCodecFor(form);
             expect(c).toBeNull();
@@ -56,31 +56,31 @@ describe("HalFormsCodecs", () => {
             expect(() => empty.requireCodecFor(form))
                 .toThrowError(new HalFormsCodecNotAvailableError(form));
         })
-
     })
+
 })
 
 describe("Default codecs", () => {
     test("form method=POST, without contentType", () => {
         const form = buildTemplate("POST", "/");
-        expect(codecs.findCodecFor(form)).toEqual(new HalFormsCodecImpl(form, nestedJson()));
+        expect(codecs.findEncoderFor(form)).toEqual(nestedJson());
     })
 
     test("form method=POST, contentType=application/json", () => {
         const form = buildTemplate("POST", "/")
             .withContentType("application/json");
-        expect(codecs.findCodecFor(form)).toEqual(new HalFormsCodecImpl(form, nestedJson()));
+        expect(codecs.findEncoderFor(form)).toEqual(nestedJson());
     });
 
     test("form method=POST, contentType=text/plain", () => {
         const form = buildTemplate("POST", "/")
             .withContentType("text/plain");
-        expect(codecs.findCodecFor(form)).toBeNull();
+        expect(codecs.findEncoderFor(form)).toBeNull();
     });
 
     test("form method=GET, without contentType", () => {
         const form = buildTemplate("GET", "/");
-        expect(codecs.findCodecFor(form)).toEqual(new HalFormsCodecImpl(form, urlencodedQuerystring()));
+        expect(codecs.findEncoderFor(form)).toEqual(urlencodedQuerystring());
     })
 
     test("form method=GET, contentType=application/json", () => {
@@ -88,6 +88,14 @@ describe("Default codecs", () => {
         // It does not matter which content type is set for the form
         const form = buildTemplate("GET", "/")
             .withContentType("application/json");
-        expect(codecs.findCodecFor(form)).toEqual(new HalFormsCodecImpl(form, urlencodedQuerystring()));
+        expect(codecs.findEncoderFor(form)).toEqual(urlencodedQuerystring());
+    })
+
+    test("representation contentType=application/json", () => {
+        const representation: EncodedHalFormsRepresentation = {
+            contentType: "application/json",
+            body: Representation.createUnsafe(null)
+        }
+        expect(codecs.findDecoderFor(representation)).toEqual(nestedJson());
     })
 })

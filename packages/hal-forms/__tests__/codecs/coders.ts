@@ -1,7 +1,9 @@
 import { describe, expect, test } from "@jest/globals";
-import buildTemplate from "../src/builder";
-import { createValues } from "../src/values";
-import { Encoders, HalFormsCodecs } from "../src/codecs";
+import buildTemplate from "../../src/builder";
+import { createValues } from "../../src/values";
+import { Coders, HalFormsCodecs, HalFormsDecoderRepresentationNotSupportedError } from "../../src/codecs";
+import { EncodedHalFormsRepresentation } from "../../src/codecs/coders";
+import { Representation } from "@contentgrid/typed-fetch";
 
 class File extends Blob {
 
@@ -61,9 +63,10 @@ const fileFilledValues = fileEmptyValues
     .withValues(plainFilledValues.valueMap)
     .withValue("file", plainTextFile);
 
-describe("Encoders.json()", () => {
+describe("Coders.json()", () => {
     const codecs = HalFormsCodecs.builder()
-        .registerEncoder(() => true, Encoders.json())
+        .registerEncoder(() => true, Coders.json())
+        .registerDecoder(() => true, Coders.json())
         .build();
 
     test("Encodes default values", () => {
@@ -118,11 +121,64 @@ describe("Encoders.json()", () => {
         expect(encoded.headers.get("content-type")).toEqual("application/hal+json");
     })
 
+    test("Decodes JSON string representation", () => {
+        const representation: EncodedHalFormsRepresentation = {
+            contentType: "application/json",
+            body: Representation.json({
+                "name": "Pierre",
+                "created_at": "2024-03-22T08:12:29.000Z",
+                "total.net": 123,
+                "total.vat": 456,
+                "senders": ["http://localhost/users/1", "http://localhost/users/2"],
+                "active": true
+            })
+        }
+        const decodedValues = codecs.requireCodecFor(plainForm).decode(representation);
+
+        expect(decodedValues.value("name").value).toEqual("Pierre")
+        expect(decodedValues.value("created_at").value).toEqual(new Date("2024-03-22T08:12:29.000Z"))
+        expect(decodedValues.value("total.net").value).toEqual(123)
+        expect(decodedValues.value("active").value).toEqual(true)
+    })
+
+    test("Decodes JSON object representation", () => {
+        const representation: EncodedHalFormsRepresentation = {
+            contentType: "application/json",
+            body: {
+                "name": "Pierre",
+                "created_at": "2024-03-22T08:12:29.000Z",
+                "total.net": 123,
+                "total.vat": 456,
+                "senders": ["http://localhost/users/1", "http://localhost/users/2"],
+                "active": true
+            }
+        }
+        const decodedValues = codecs.requireCodecFor(plainForm).decode(representation);
+
+        expect(decodedValues.value("name").value).toEqual("Pierre")
+        expect(decodedValues.value("created_at").value).toEqual(new Date("2024-03-22T08:12:29.000Z"))
+        expect(decodedValues.value("total.net").value).toEqual(123)
+        expect(decodedValues.value("active").value).toEqual(true)
+    })
+
+    test("Refuses to decode invalid JSON object representation", () => {
+        const representation: EncodedHalFormsRepresentation = {
+            contentType: "application/json",
+            body: Representation.createUnsafe("{{{")
+        };
+
+        const decoder = codecs.requireCodecFor(plainForm);
+        expect(() => decoder.decode(representation))
+            .toThrowError(new HalFormsDecoderRepresentationNotSupportedError(representation))
+
+    })
+
 })
 
-describe("Encoders.nestedJson()", () => {
+describe("Coders.nestedJson()", () => {
     const codecs = HalFormsCodecs.builder()
-        .registerEncoder(() => true, Encoders.nestedJson())
+        .registerEncoder(() => true, Coders.nestedJson())
+        .registerDecoder(() => true, Coders.nestedJson())
         .build();
 
     test("Encodes default values", () => {
@@ -160,6 +216,46 @@ describe("Encoders.nestedJson()", () => {
             })
     });
 
+    test("Decodes JSON string representation", () => {
+        const representation: EncodedHalFormsRepresentation = {
+            contentType: "application/json",
+            body: Representation.json({
+                "name": "Pierre",
+                "created_at": "2024-03-22T08:12:29.000Z",
+                "total": {
+                    "net": 123,
+                    "vat": 456
+                }
+            })
+        }
+        const decodedValues = codecs.requireCodecFor(plainForm).decode(representation);
+
+        expect(decodedValues.value("name").value).toEqual("Pierre")
+        expect(decodedValues.value("created_at").value).toEqual(new Date("2024-03-22T08:12:29.000Z"))
+        expect(decodedValues.value("total.net").value).toEqual(123)
+        expect(decodedValues.value("active").value).toEqual(false) // this is the default value
+    })
+
+    test("Decodes JSON object representation", () => {
+        const representation: EncodedHalFormsRepresentation = {
+            contentType: "application/json",
+            body: {
+                "name": "Pierre",
+                "created_at": "2024-03-22T08:12:29.000Z",
+                "total": {
+                    "net": 123,
+                    "vat": 456
+                }
+            }
+        }
+        const decodedValues = codecs.requireCodecFor(plainForm).decode(representation);
+
+        expect(decodedValues.value("name").value).toEqual("Pierre")
+        expect(decodedValues.value("created_at").value).toEqual(new Date("2024-03-22T08:12:29.000Z"))
+        expect(decodedValues.value("total.net").value).toEqual(123)
+        expect(decodedValues.value("active").value).toEqual(false) // this is the default value
+    })
+
     test("Refuses to encode files", () => {
         expect(() => codecs.requireCodecFor(fileForm)
             .encode(fileFilledValues))
@@ -173,9 +269,9 @@ describe("Encoders.nestedJson()", () => {
 
 })
 
-describe("Encoders.uriList()", () => {
+describe("Coders.uriList()", () => {
     const codecs = HalFormsCodecs.builder()
-        .registerEncoder(() => true, Encoders.uriList())
+        .registerEncoder(() => true, Coders.uriList())
         .build();
 
     test("Encodes URI value from a single single-value field", () => {
@@ -271,9 +367,9 @@ describe("Encoders.uriList()", () => {
     })
 })
 
-describe("Encoders.multipartForm()", () => {
+describe("Coders.multipartForm()", () => {
     const codecs = HalFormsCodecs.builder()
-        .registerEncoder(() => true, Encoders.multipartForm())
+        .registerEncoder(() => true, Coders.multipartForm())
         .build();
 
     test("Encodes default values", () => {
@@ -327,9 +423,9 @@ describe("Encoders.multipartForm()", () => {
     })
 })
 
-describe("Encoders.urlencodedForm()", () => {
+describe("Coders.urlencodedForm()", () => {
     const codecs = HalFormsCodecs.builder()
-        .registerEncoder(() => true, Encoders.urlencodedForm())
+        .registerEncoder(() => true, Coders.urlencodedForm())
         .build();
     test("Encodes default values", () => {
         const encoded = codecs.requireCodecFor(plainForm)
@@ -366,9 +462,9 @@ describe("Encoders.urlencodedForm()", () => {
 
 })
 
-describe("Encoders.urlencodedQuerystring()", () => {
+describe("Coders.urlencodedQuerystring()", () => {
     const codecs = HalFormsCodecs.builder()
-        .registerEncoder(() => true, Encoders.urlencodedQuerystring())
+        .registerEncoder(() => true, Coders.urlencodedQuerystring())
         .build();
 
 
