@@ -114,6 +114,38 @@ console.log(response);
 
 </details>
 
+### Decoding responses into HAL-FORMS
+
+You may want to pre-fill some HAL-FORMS with values coming from a response received earlier from the backend.
+
+The `@contentgrid/hal-forms/codecs` sub-package also provides _decoders_ that can decode a response into values for a HAL-FORMS template.
+
+This is especially useful for edit forms, where the current values of the backend are prefilled into the form before showing it to the user for modification.
+
+<details>
+
+<summary>Code example for decoding form values with codecs</summary>
+
+```typescript
+import codecs from "@contentgrid/hal-forms/codecs";
+
+const templateValues = codecs.requireCodecFor(template) // template is a HalFormsTemplate
+    .decode({
+        contentType: "application/json",
+        body: { // body can be a string encoding a JSON object as well (or FormData)
+            name: "Jeff"
+        }
+    });
+
+// templateValues is the same as created using createValues(template), but with data filled in
+templateValues.values.forEach(value => {
+    console.log(`Field ${value.property.name}: ${value.value}`)
+})
+```
+
+</details>
+
+
 ### Shapes
 
 The `@contentgrid/hal-forms/shape` sub-package provides POJO (plain old javascript object) types that can be used to represent the raw HAL-FORMS JSON data.

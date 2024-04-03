@@ -1,27 +1,27 @@
 export * from "./api";
 export * from "./errors";
-export * as Encoders from "./encoders";
+export * as Coders from "./coders";
 
-import { HalFormsCodecs, HalFormsCodecsMatchers } from "./api";
-import { multipartForm, nestedJson, uriList, urlencodedForm, urlencodedQuerystring } from "./encoders";
+import { HalFormsCodecs, HalFormsEncoderMatchers } from "./api";
+import * as Coders from "./coders";
 
 /**
  * Default HAL-FORMS codecs
  */
 export default HalFormsCodecs.builder()
     .registerEncoder(
-        HalFormsCodecsMatchers.all(
-            HalFormsCodecsMatchers.unsetContentType(),
-            HalFormsCodecsMatchers.encodedToRequestBody()
+        HalFormsEncoderMatchers.all(
+            HalFormsEncoderMatchers.unsetContentType(),
+            HalFormsEncoderMatchers.encodedToRequestBody()
         ),
-        nestedJson()
+        Coders.nestedJson()
     )
     .registerEncoder(
-        HalFormsCodecsMatchers.encodedToRequestUrl(),
-        urlencodedQuerystring()
+        HalFormsEncoderMatchers.encodedToRequestUrl(),
+        Coders.urlencodedQuerystring()
     )
-    .registerEncoder("application/json", nestedJson())
-    .registerEncoder("text/uri-list", uriList())
-    .registerEncoder("multipart/form-data", multipartForm())
-    .registerEncoder("application/x-www-form-urlencoded", urlencodedForm())
+    .registerCoder("application/json", Coders.nestedJson())
+    .registerEncoder("text/uri-list", Coders.uriList())
+    .registerEncoder("multipart/form-data", Coders.multipartForm())
+    .registerEncoder("application/x-www-form-urlencoded", Coders.urlencodedForm())
     .build();
