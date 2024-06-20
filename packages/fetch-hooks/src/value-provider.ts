@@ -84,11 +84,11 @@ export namespace ValueProviderResolver {
 
     /**
      * Creates a cached {@link ValueProviderResolver}, where the initially resolved value is cached after it is requested once
-     * @param resolver Resolver to cache
+     * @param valueProvider The value provider to cache
      * @returns Resolver that automatically caches the first resolved value
      */
-    export function cached<T, Args extends readonly any[]>(resolver: ValueProviderResolver<T, Args>): ValueProviderResolver<T, Args> {
-        return new CachedValueProviderResolver(resolver);
+    export function cached<T, Args extends readonly any[]>(valueProvider: ValueProvider<T, Args>): ValueProviderResolver<T, Args> {
+        return new CachedValueProviderResolver(fromValueProvider(valueProvider));
     }
 
 }

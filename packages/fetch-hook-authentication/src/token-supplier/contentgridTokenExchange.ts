@@ -59,7 +59,7 @@ function createOAuth2Error(responseBody: any): OAuth2AuthenticationError | null 
 }
 
 export default function createContentgridTokenExchangeTokenSupplier(config: TokenExchangeConfiguration): AuthenticationTokenSupplier {
-    const exchangeUrlResolver = ValueProviderResolver.cached(ValueProviderResolver.fromValueProvider(config.exchangeUrl));
+    const exchangeUrlResolver = ValueProviderResolver.fromValueProvider(config.exchangeUrl);
     return async (uri, opts) => {
         const exchangeUrl = await exchangeUrlResolver.resolve(opts);
         const response = await opts.fetch(exchangeUrl, {
