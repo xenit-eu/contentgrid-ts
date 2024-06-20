@@ -9,8 +9,8 @@ interface AuthenticationTokenHookOptions {
 
 
 export default function createBearerAuthenticationHook(opts: AuthenticationTokenHookOptions): FetchHook {
-    return setHeader("Authorization", async ({ request }) => {
-        const authenticationToken = await opts.tokenSupplier(request.url, { signal: request.signal });
+    return setHeader("Authorization", async ({ request, entrypoint }) => {
+        const authenticationToken = await opts.tokenSupplier(request.url, { signal: request.signal, fetch: entrypoint });
         if(authenticationToken) {
             return "Bearer " + authenticationToken.token;
         } else {

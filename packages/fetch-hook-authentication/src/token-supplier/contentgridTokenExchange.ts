@@ -2,11 +2,8 @@ import { FetchHooksError } from "@contentgrid/fetch-hooks";
 import { AuthenticationToken, AuthenticationTokenSupplier } from "./types";
 import MimeType from "whatwg-mimetype";
 
-type Fetch = typeof fetch;
-
 
 interface TokenExchangeConfiguration {
-    fetch: Fetch,
     exchangeUrl: string;
 }
 
@@ -62,7 +59,7 @@ function createOAuth2Error(responseBody: any): OAuth2AuthenticationError | null 
 
 export default function createContentgridTokenExchangeTokenSupplier(config: TokenExchangeConfiguration): AuthenticationTokenSupplier {
     return async (uri, opts) => {
-        const response = await config.fetch(config.exchangeUrl, {
+        const response = await opts.fetch(config.exchangeUrl, {
             signal: opts?.signal ?? null,
             method: "POST",
             body: createTokenRequestBody(uri)

@@ -6,7 +6,8 @@ export interface AuthenticationToken {
 
 
 interface AuthenticationTokenSupplierOptions {
-    signal?: AbortSignal
+    fetch: typeof fetch;
+    signal?: AbortSignal;
 }
 
-export type AuthenticationTokenSupplier = (uri: string, opts?: AuthenticationTokenSupplierOptions) => Promise<AuthenticationToken | null>;
+export type AuthenticationTokenSupplier = (uri: string, opts: AuthenticationTokenSupplierOptions) => Promise<AuthenticationToken | null>;
