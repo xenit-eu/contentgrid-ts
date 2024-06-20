@@ -1,8 +1,9 @@
+import { ValueProviderResolver } from "@contentgrid/fetch-hooks/value-provider";
 import createBearerAuthenticationHook from "../src"
 
 test("injects authorization header when token supplied", async () => {
     const hook = createBearerAuthenticationHook({
-        tokenSupplier: async (uri) => ({ token: "token-" + uri, expiresAt: null })
+        tokenSupplier: ValueProviderResolver.constant(async (uri) => ({ token: "token-" + uri, expiresAt: null }))
     });
 
     const fakeFetch = jest.fn(async (..._args: Parameters<typeof fetch>) => new Response("", { status: 200 }));
@@ -20,7 +21,7 @@ test("injects authorization header when token supplied", async () => {
 
 test("ignores authorization header when notoken supplied", async () => {
     const hook = createBearerAuthenticationHook({
-        tokenSupplier: async () => null
+        tokenSupplier: ValueProviderResolver.constant(async () => null)
     });
 
     const fakeFetch = jest.fn(async (..._args: Parameters<typeof fetch>) => new Response("", { status: 200 }));
