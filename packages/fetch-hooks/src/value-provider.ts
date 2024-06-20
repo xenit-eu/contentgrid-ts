@@ -87,7 +87,7 @@ export namespace ValueProviderResolver {
      * @param resolver Resolver to cache
      * @returns Resolver that automatically caches the first resolved value
      */
-    export function cached<T>(resolver: ValueProviderResolver<T, []>): ValueProviderResolver<T, []> {
+    export function cached<T, Args extends readonly any[]>(resolver: ValueProviderResolver<T, Args>): ValueProviderResolver<T, Args> {
         return new CachedValueProviderResolver(resolver);
     }
 
@@ -121,20 +121,20 @@ class ConstantValueProviderResolver<T> implements ValueProviderResolver<T, reado
     }
 }
 
-class CachedValueProviderResolver<T> implements ValueProviderResolver<T, []> {
+class CachedValueProviderResolver<T, Args extends readonly any[]> implements ValueProviderResolver<T, Args> {
     public readonly [valueProviderResolver] = true as const;
 
     #cachedValue: Promise<T> | undefined;
 
     public constructor(
-        private readonly delegate: ValueProviderResolver<T, []>
+        private readonly delegate: ValueProviderResolver<T, Args>
     ) {
 
     }
 
-    public resolve(): Promise<T> {
+    public resolve(...args: Args): Promise<T> {
         if(!this.#cachedValue) {
-            this.#cachedValue = this.delegate.resolve();
+            this.#cachedValue = this.delegate.resolve(...args);
         }
 
         return this.#cachedValue;

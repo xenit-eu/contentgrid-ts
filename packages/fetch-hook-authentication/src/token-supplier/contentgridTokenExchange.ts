@@ -5,7 +5,7 @@ import { ValueProvider, ValueProviderResolver } from "@contentgrid/fetch-hooks/v
 
 
 interface TokenExchangeConfiguration {
-    exchangeUrl: ValueProvider<string, []>;
+    exchangeUrl: ValueProvider<string, [{ fetch: typeof fetch }]>;
 }
 
 function createTokenRequestBody(resource: string): URLSearchParams {
@@ -61,7 +61,7 @@ function createOAuth2Error(responseBody: any): OAuth2AuthenticationError | null 
 export default function createContentgridTokenExchangeTokenSupplier(config: TokenExchangeConfiguration): AuthenticationTokenSupplier {
     const exchangeUrlResolver = ValueProviderResolver.cached(ValueProviderResolver.fromValueProvider(config.exchangeUrl));
     return async (uri, opts) => {
-        const exchangeUrl = await exchangeUrlResolver.resolve();
+        const exchangeUrl = await exchangeUrlResolver.resolve(opts);
         const response = await opts.fetch(exchangeUrl, {
             signal: opts?.signal ?? null,
             method: "POST",
