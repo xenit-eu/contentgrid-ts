@@ -1,0 +1,45 @@
+{
+  "name": "@contentgrid/fetch-hook-authentication",
+  "version": "0.0.1-alpha.0",
+  "description": "",
+  "keywords": [
+    "fetch",
+    "typescript",
+    "hooks",
+    "fetch-hook"
+  ],
+  "main": "./build/index.js",
+  "module": "./build/index.mjs",
+  "types": "./build/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "import": "./build/index.mjs",
+      "default": "./build/index.js"
+    }
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@babel/runtime": "^7.22.10",
+    "@contentgrid/fetch-hooks": "^0.0.1-alpha.0",
+    "@types/whatwg-mimetype": "^3.0.2",
+    "tslib": "^2.6.1",
+    "whatwg-mimetype": "^4.0.0"
+  },
+  "scripts": {
+    "prepare": "rollup -c",
+    "test": "jest"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "build"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xenit-eu/contentgrid-ts.git",
+    "directory": "packages/fetch-hook-authentication"
+  },
+  "devDependencies": {}
+}
