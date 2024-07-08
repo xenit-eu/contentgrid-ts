@@ -1,10 +1,11 @@
-import { ValueProvider, resolveValueProvider } from "./value-provider";
+import { ValueProvider, ValueProviderResolver } from "./value-provider";
 
-import createHook, { FetchHook } from "./hook";
+import createHook, { FetchHook, ReadonlyFetchHookInvocation } from "./hook";
 
-export function appendHeader(headerName: string, value: ValueProvider<string | null>): FetchHook {
+export function appendHeader(headerName: string, value: ValueProvider<string | null, [ReadonlyFetchHookInvocation]>): FetchHook {
     return createHook(async (invocation) => {
-        const resolved = await resolveValueProvider(invocation, value);
+        const resolved = await ValueProviderResolver.fromValueProvider(value).resolve(invocation);
+
         if(resolved !== null) {
             invocation.request.headers.append(headerName, resolved);
         }
@@ -12,9 +13,9 @@ export function appendHeader(headerName: string, value: ValueProvider<string | n
     })
 }
 
-export function setHeader(headerName: string, value: ValueProvider<string | null>): FetchHook {
+export function setHeader(headerName: string, value: ValueProvider<string | null, [ReadonlyFetchHookInvocation]>): FetchHook {
     return createHook(async (invocation) => {
-        const resolved = await resolveValueProvider(invocation, value);
+        const resolved = await ValueProviderResolver.fromValueProvider(value).resolve(invocation);
         if(resolved !== null) {
             invocation.request.headers.set(headerName, resolved);
         }
