@@ -44,7 +44,7 @@ function isJsonContentType(contentType: string | null): boolean {
     const mimetype = new MimeType(contentType);
 
     // https://mimesniff.spec.whatwg.org/#json-mime-type
-    return (mimetype.type === "application" || mimetype.type === "text") && (mimetype.subtype === "json" || mimetype.subtype.endsWith("+json"));
+    return ((mimetype.type === "application" || mimetype.type === "text") && mimetype.subtype === "json") || mimetype.subtype.endsWith("+json");
 
 }
 
