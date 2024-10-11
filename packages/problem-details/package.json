@@ -1,6 +1,6 @@
 {
   "name": "@contentgrid/problem-details",
-  "version": "0.0.1-alpha.0",
+  "version": "0.0.0",
   "description": "RFC9547 Problem Details types and helpers",
   "keywords": [
     "RFC7807",

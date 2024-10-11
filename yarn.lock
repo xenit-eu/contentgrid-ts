@@ -1499,14 +1499,14 @@ __metadata:
   resolution: "@contentgrid/fetch-hook-authentication@workspace:packages/fetch-hook-authentication"
   dependencies:
     "@babel/runtime": "npm:^7.22.10"
-    "@contentgrid/fetch-hooks": "npm:^0.0.1-alpha.0"
+    "@contentgrid/fetch-hooks": "npm:^0.0.0"
     "@types/whatwg-mimetype": "npm:^3.0.2"
     tslib: "npm:^2.6.1"
     whatwg-mimetype: "npm:^4.0.0"
   languageName: unknown
   linkType: soft
 
-"@contentgrid/fetch-hooks@npm:^0.0.1-alpha.0, @contentgrid/fetch-hooks@workspace:packages/fetch-hooks":
+"@contentgrid/fetch-hooks@npm:^0.0.0, @contentgrid/fetch-hooks@workspace:packages/fetch-hooks":
   version: 0.0.0-use.local
   resolution: "@contentgrid/fetch-hooks@workspace:packages/fetch-hooks"
   dependencies:
@@ -1521,18 +1521,18 @@ __metadata:
   resolution: "@contentgrid/hal-forms@workspace:packages/hal-forms"
   dependencies:
     "@babel/runtime": "npm:^7.22.10"
-    "@contentgrid/hal": "npm:^0.0.1-alpha.0"
-    "@contentgrid/typed-fetch": "npm:^0.0.1-alpha.0"
+    "@contentgrid/hal": "npm:^0.0.0"
+    "@contentgrid/typed-fetch": "npm:^0.0.0"
     tslib: "npm:^2.6.1"
   languageName: unknown
   linkType: soft
 
-"@contentgrid/hal@npm:^0.0.1-alpha.0, @contentgrid/hal@workspace:packages/hal":
+"@contentgrid/hal@npm:^0.0.0, @contentgrid/hal@workspace:packages/hal":
   version: 0.0.0-use.local
   resolution: "@contentgrid/hal@workspace:packages/hal"
   dependencies:
     "@babel/runtime": "npm:^7.22.10"
-    "@contentgrid/uri-template": "npm:^0.0.1-alpha.0"
+    "@contentgrid/uri-template": "npm:^0.0.0"
     tslib: "npm:^2.6.1"
   languageName: unknown
   linkType: soft
@@ -1546,7 +1546,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@contentgrid/typed-fetch@npm:^0.0.1-alpha.0, @contentgrid/typed-fetch@workspace:packages/typed-fetch":
+"@contentgrid/typed-fetch@npm:^0.0.0, @contentgrid/typed-fetch@workspace:packages/typed-fetch":
   version: 0.0.0-use.local
   resolution: "@contentgrid/typed-fetch@workspace:packages/typed-fetch"
   dependencies:
@@ -1556,7 +1556,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@contentgrid/uri-template@npm:^0.0.1-alpha.0, @contentgrid/uri-template@workspace:packages/uri-template":
+"@contentgrid/uri-template@npm:^0.0.0, @contentgrid/uri-template@workspace:packages/uri-template":
   version: 0.0.0-use.local
   resolution: "@contentgrid/uri-template@workspace:packages/uri-template"
   dependencies:

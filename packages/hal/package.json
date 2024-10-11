@@ -1,6 +1,6 @@
 {
   "name": "@contentgrid/hal",
-  "version": "0.0.1-alpha.0",
+  "version": "0.0.0",
   "description": "Hypertext Application Language resource models",
   "keywords": [
     "HAL",
@@ -37,7 +37,7 @@
   "license": "MIT",
   "dependencies": {
     "@babel/runtime": "^7.22.10",
-    "@contentgrid/uri-template": "^0.0.1-alpha.0",
+    "@contentgrid/uri-template": "^0.0.0",
     "tslib": "^2.6.1"
   },
   "scripts": {

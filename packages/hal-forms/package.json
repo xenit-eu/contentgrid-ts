@@ -1,6 +1,6 @@
 {
   "name": "@contentgrid/hal-forms",
-  "version": "0.0.1-alpha.0",
+  "version": "0.0.0",
   "description": "HAL-FORMS models",
   "keywords": [
     "HAL-FORMS",
@@ -48,8 +48,8 @@
   "license": "MIT",
   "dependencies": {
     "@babel/runtime": "^7.22.10",
-    "@contentgrid/hal": "^0.0.1-alpha.0",
-    "@contentgrid/typed-fetch": "^0.0.1-alpha.0",
+    "@contentgrid/hal": "^0.0.0",
+    "@contentgrid/typed-fetch": "^0.0.0",
     "tslib": "^2.6.1"
   },
   "scripts": {
