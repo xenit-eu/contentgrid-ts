@@ -1,6 +1,6 @@
 {
   "name": "@contentgrid/fetch-hook-authentication",
-  "version": "0.0.1-alpha.0",
+  "version": "0.0.0",
   "description": "",
   "keywords": [
     "fetch",
@@ -21,7 +21,7 @@
   "license": "MIT",
   "dependencies": {
     "@babel/runtime": "^7.22.10",
-    "@contentgrid/fetch-hooks": "^0.0.1-alpha.0",
+    "@contentgrid/fetch-hooks": "^0.0.0",
     "@types/whatwg-mimetype": "^3.0.2",
     "tslib": "^2.6.1",
     "whatwg-mimetype": "^4.0.0"
