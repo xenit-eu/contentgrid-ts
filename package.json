@@ -8,7 +8,6 @@
     "build": "lerna exec yarn prepare",
     "test": "lerna exec yarn test"
   },
-  "dependencies": {},
   "devDependencies": {
     "@babel/core": "^7.22.9",
     "@babel/plugin-transform-runtime": "^7.22.9",
@@ -27,5 +26,5 @@
     "ts-jest": "^29.1.1",
     "typescript": "^5.1.6"
   },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  "packageManager": "yarn@4.5.0"
 }

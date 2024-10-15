@@ -15,7 +15,9 @@ jobs:
           node-version: 18
           registry-url: 'https://registry.npmjs.org'
           scope: '@contentgrid'
-      - run: yarn install --frozen-lockfile
+      - run: |
+          corepack enable
+          yarn install --frozen-lockfile
       - name: Build
         run: yarn build
       - name: Test
