@@ -2,6 +2,7 @@ import { HalFormsProperty, HalFormsPropertyInlineOptions, HalFormsPropertyOption
 import { MATCH_ANYTHING, MATCH_NOTHING } from "./_internal";
 import { TypedRequestSpec } from "@contentgrid/typed-fetch";
 import { HalFormsPropertyType, HalFormsPropertyValue } from "./_shape";
+import { SimpleLink } from "@contentgrid/hal";
 
 export class HalFormsTemplateBuilder<Body, Response> implements HalFormsTemplate<TypedRequestSpec<Body, Response>> {
 
@@ -119,7 +120,7 @@ export class HalFormsPropertyBuilder implements HalFormsProperty {
             return this.withOptions(opts => opts.withInline(options));
         }
         if(typeof options === "function") {
-            return new HalFormsPropertyBuilder(this.name, this.type, this.readOnly, this.required, options(this._options ?? new HalFormsPropertyInlineOptionsImpl([])), this.regex, this.minLength, this.maxLength, this.prompt, this.value);
+            return new HalFormsPropertyBuilder(this.name, this.type, this.readOnly, this.required, options(this._options ?? new HalFormsPropertyOptionsImpl()), this.regex, this.minLength, this.maxLength, this.prompt, this.value);
         }
         throw new Error("Unknown type of options");
     }
@@ -153,35 +154,53 @@ export class HalFormsPropertyBuilder implements HalFormsProperty {
 export interface HalFormsPropertyOptionsBuilder {
     withInline(inline: readonly HalFormsPropertyOption[]): HalFormsPropertyOptionsBuilder;
     addInlineOption(option: HalFormsPropertyOption): HalFormsPropertyOptionsBuilder;
+    withRemote(link: SimpleLink): HalFormsPropertyOptionsBuilder;
     withMaxItems(maxItems: number): HalFormsPropertyOptionsBuilder;
     withMinItems(minItems: number): HalFormsPropertyOptionsBuilder;
     build(): HalFormsPropertyInlineOptions | HalFormsPropertyRemoteOptions;
 }
 
-class HalFormsPropertyInlineOptionsImpl implements HalFormsPropertyInlineOptions<HalFormsPropertyOption>, HalFormsPropertyOptionsBuilder {
+type Writeable<T> = {
+    -readonly [P in keyof T]?: T[P];
+}
+
+class HalFormsPropertyOptionsImpl implements HalFormsPropertyInlineOptions<HalFormsPropertyOption>, HalFormsPropertyRemoteOptions<HalFormsPropertyOption>, HalFormsPropertyOptionsBuilder {
+
 
     public constructor(
-        public readonly inline: readonly HalFormsPropertyOption[],
+        public readonly inline: readonly HalFormsPropertyOption[] = undefined!,
+        public readonly link: SimpleLink = undefined!,
         public readonly maxItems: number = Infinity,
         public readonly minItems: number = 0,
     ) {
-
+        // This is to ensure that the 'inline' or 'link' properties are really not available when they are unset,
+        // without having to create two separate classes for them
+        if(!link) {
+            delete (this as Writeable<this>).link;
+        }
+        if(!inline) {
+            delete (this as Writeable<this>).inline
+        }
     }
 
     public withInline(inline: readonly HalFormsPropertyOption[]): HalFormsPropertyOptionsBuilder {
-        return new HalFormsPropertyInlineOptionsImpl(inline, this.maxItems, this.minItems);
+        return new HalFormsPropertyOptionsImpl(inline, undefined!, this.maxItems, this.minItems);
     }
 
     public addInlineOption(option: HalFormsPropertyOption): HalFormsPropertyOptionsBuilder {
-        return this.withInline(this.inline.concat([option]));
+        return this.withInline((this.inline ?? []).concat([option]));
+    }
+
+    public withRemote(link: SimpleLink): HalFormsPropertyOptionsBuilder {
+        return new HalFormsPropertyOptionsImpl(undefined!, link, this.maxItems, this.minItems);
     }
 
     public withMaxItems(maxItems: number): HalFormsPropertyOptionsBuilder {
-        return new HalFormsPropertyInlineOptionsImpl(this.inline, maxItems, this.minItems);
+        return new HalFormsPropertyOptionsImpl(this.inline, this.link, maxItems, this.minItems);
     }
 
     public withMinItems(minItems: number): HalFormsPropertyOptionsBuilder {
-        return new HalFormsPropertyInlineOptionsImpl(this.inline, this.maxItems, minItems);
+        return new HalFormsPropertyOptionsImpl(this.inline, this.link, this.maxItems, minItems);
     }
 
     public build(): HalFormsPropertyInlineOptions<unknown> | HalFormsPropertyRemoteOptions<unknown> {
@@ -189,26 +208,37 @@ class HalFormsPropertyInlineOptionsImpl implements HalFormsPropertyInlineOptions
     }
 
     public get selectedValues(): readonly string[] {
-        return[]
+        return [];
     }
 
     public toOption(data: HalFormsPropertyOption): HalFormsPropertyOption {
         return data;
     }
 
-    public loadOptions(): Promise<readonly HalFormsPropertyOption[]> {
-        return Promise.resolve(this.inline);
+    public async loadOptions(): Promise<readonly HalFormsPropertyOption[]>;
+    public async loadOptions(fetcher: (link: SimpleLink) => Promise<readonly HalFormsPropertyOption[]>): Promise<readonly HalFormsPropertyOption[]>;
+    public async loadOptions(fetcher?: (link: SimpleLink) => Promise<readonly HalFormsPropertyOption[]>): Promise<readonly HalFormsPropertyOption[]> {
+        if (this.isRemote() && fetcher) {
+            return await fetcher(this.link);
+        }
+
+        if (this.isInline()) {
+            return this.inline;
+        }
+
+        throw new Error("Options are not inline or remote");
     }
 
     public isInline(): this is HalFormsPropertyInlineOptions<HalFormsPropertyOption> {
-        return true;
+        return this.inline !== undefined;
     }
 
     public isRemote(): this is HalFormsPropertyRemoteOptions<HalFormsPropertyOption> {
-        return false;
+        return this.link !== undefined;
     }
 
 }
+
 
 export default function buildTemplate<B, R>(method: string, url: string): HalFormsTemplateBuilder<B, R> {
     return HalFormsTemplateBuilder.from<B, R>({ method, url })
