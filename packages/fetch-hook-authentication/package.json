@@ -40,6 +40,5 @@
     "type": "git",
     "url": "git+https://github.com/xenit-eu/contentgrid-ts.git",
     "directory": "packages/fetch-hook-authentication"
-  },
-  "devDependencies": {}
+  }
 }

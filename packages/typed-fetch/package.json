@@ -2,7 +2,10 @@
   "name": "@contentgrid/typed-fetch",
   "version": "0.0.1-alpha.0",
   "description": "Add typing information to fetch() requests and responses",
-  "keywords": ["fetch", "typescript"],
+  "keywords": [
+    "fetch",
+    "typescript"
+  ],
   "main": "./build/index.js",
   "module": "./build/index.mjs",
   "types": "./build/index.d.ts",

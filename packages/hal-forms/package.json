@@ -2,7 +2,14 @@
   "name": "@contentgrid/hal-forms",
   "version": "0.0.1-alpha.0",
   "description": "HAL-FORMS models",
-  "keywords": ["HAL-FORMS", "HAL", "json", "rest", "hypermedia", "HATEOAS"],
+  "keywords": [
+    "HAL-FORMS",
+    "HAL",
+    "json",
+    "rest",
+    "hypermedia",
+    "HATEOAS"
+  ],
   "main": "./build/index.js",
   "module": "./build/index.mjs",
   "types": "./build/index.d.ts",
@@ -40,9 +47,9 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@contentgrid/typed-fetch": "^0.0.1-alpha.0",
-    "@contentgrid/hal": "^0.0.1-alpha.0",
     "@babel/runtime": "^7.22.10",
+    "@contentgrid/hal": "^0.0.1-alpha.0",
+    "@contentgrid/typed-fetch": "^0.0.1-alpha.0",
     "tslib": "^2.6.1"
   },
   "scripts": {

@@ -2,7 +2,11 @@
   "name": "@contentgrid/uri-template",
   "version": "0.0.1-alpha.0",
   "description": "RFC6570 URI template parser and expander",
-  "keywords": ["RFC6570", "uri-template", "uri"],
+  "keywords": [
+    "RFC6570",
+    "uri-template",
+    "uri"
+  ],
   "main": "./build/index.js",
   "module": "./build/index.mjs",
   "types": "./build/index.d.ts",
