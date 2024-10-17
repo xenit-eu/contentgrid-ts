@@ -9,6 +9,17 @@ export class SimpleLink {
 
     }
 
+    public static to(href: string): SimpleLink {
+        return new SimpleLink({ href });
+    }
+
+    public static templated(template: UriTemplate): SimpleLink {
+        return new SimpleLink({
+            href: template.template,
+            templated: true
+        })
+    }
+
     // @internal
     #warnDeprecation() {
         if(this.deprecation && !this.#deprecationWarned) {
@@ -48,6 +59,10 @@ export class SimpleLink {
 
     public get deprecation(): string | undefined {
         return this.data.deprecation;
+    }
+
+    public withRel(rel: LinkRelation): Link {
+        return new Link(rel, this.data);
     }
 
     public toString() {
