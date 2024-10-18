@@ -6,7 +6,6 @@ import { appendHeader } from '../src/request';
 
 test("compose", async () => {
     const fakeFetch = fetchMock.sandbox();
-    global.Request = fakeFetch.config.Request as any;
 
     const testHeader = "X-Test";
 
@@ -29,7 +28,7 @@ test("compose", async () => {
 
     expect(response.ok).toBe(true);
     expect(await response.json()).toEqual({
-        test: "1,2,3"
+        test: "1, 2, 3"
     })
 
 })

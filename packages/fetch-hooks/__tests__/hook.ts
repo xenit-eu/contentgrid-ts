@@ -6,7 +6,6 @@ import { DuplicateInvocationError, FetchHookInvocationImpl } from '../src/hook/i
 
 describe("hook", () => {
     const fakeFetch = fetchMock.sandbox();
-    global.Request = fakeFetch.config.Request as any;
 
     fakeFetch.post("http://localhost/length", async (_url, {headers, body}) => {
         const h = new Headers(headers)
@@ -71,8 +70,9 @@ describe("hook", () => {
                     "X-Loopback": "true"
                 },
                 method: "POST",
-                body: request.body
-            })
+                body: request.body,
+                duplex: "half" // This is required when a stream is sent, but it is not part of the types yet
+            } as unknown as RequestInit)
             return next(newRequest);
         });
 
