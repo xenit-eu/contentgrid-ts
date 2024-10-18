@@ -5,7 +5,6 @@ import { setHeader } from '../src/request';
 
 describe("setHeader", () => {
     const fakeFetch = fetchMock.sandbox();
-    global.Request = fakeFetch.config.Request as any;
 
     const testHeader = "X-Test";
 

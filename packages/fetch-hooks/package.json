@@ -48,6 +48,6 @@
     "directory": "packages/fetch-hooks"
   },
   "devDependencies": {
-    "fetch-mock": "^9.11.0"
+    "fetch-mock": "^11.0.0"
   }
 }
