@@ -19,6 +19,18 @@ export class HalFormsTemplateBuilder<Body, Response> implements HalFormsTemplate
         return new HalFormsTemplateBuilder(request.method + " "+request.url, request);
     }
 
+    public static fromTemplate<B, R>(template: HalFormsTemplate<TypedRequestSpec<B, R>>): HalFormsTemplateBuilder<B, R> {
+        let builder = this.from(template.request)
+            .withName(template.name)
+            .withContentType(template.contentType);
+
+        for (const prop of template.properties) {
+            builder = builder.addProperty(prop.name, () => prop);
+        }
+
+        return builder;
+    }
+
     public get title() {
         return undefined;
     }
