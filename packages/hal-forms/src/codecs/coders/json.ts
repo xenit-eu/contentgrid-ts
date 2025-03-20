@@ -3,7 +3,7 @@ import { HalFormsProperty, HalFormsTemplate } from "../../api";
 import { EncodedHalFormsRepresentation, HalFormsDecoder, HalFormsEncoder } from "./api";
 import { HalFormsPropertyType } from "../../_shape";
 import { createValues, AnyHalFormValue, HalFormValues } from "../../values";
-import { HalFormsDecoderRepresentationNotSupportedError } from "..";
+import { HalFormsDecoderRepresentationNotSupportedError } from "../errors";
 
 /**
  * Encodes HAL-FORMS values as a JSON object

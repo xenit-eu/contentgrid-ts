@@ -1,5 +1,5 @@
 import { HalError } from "@contentgrid/hal";
-import { HalFormsTemplateError, HalFormsTemplate, HalFormsTemplatePropertyError, HalFormsProperty } from "..";
+import { HalFormsTemplateError, HalFormsTemplate, HalFormsTemplatePropertyError, HalFormsProperty } from "../index";
 import { EncodedHalFormsRepresentation } from "./coders";
 
 /**

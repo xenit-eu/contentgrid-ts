@@ -1,5 +1,5 @@
 import { TypedRequestSpec, TypedRequest, createRequest, Representation } from "@contentgrid/typed-fetch";
-import { HalFormsProperty, HalFormsTemplate } from "../..";
+import { HalFormsProperty, HalFormsTemplate } from "../../index";
 import { AnyHalFormValue } from "../../values";
 import { HalFormsEncoder } from "./api";
 import { HalFormsPropertyType } from "../../_shape";

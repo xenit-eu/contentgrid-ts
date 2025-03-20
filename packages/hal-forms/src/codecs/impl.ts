@@ -1,5 +1,5 @@
 import { TypedRequest, TypedRequestSpec } from "@contentgrid/typed-fetch";
-import { HalFormsTemplate } from "..";
+import { HalFormsTemplate } from "../index";
 import { HalFormsCodec, HalFormsEncoderMatcher, HalFormsCodecs, HalFormsCodecsBuilder, HalFormsEncoderMatchers, HalFormsDecoderMatcher, HalFormsDecoderMatchers } from "./api";
 import { EncodedHalFormsRepresentation, HalFormsDecoder, HalFormsEncoder } from "./coders/api";
 import { HalFormsCodecNotAvailableError, HalFormsCodecPropertyTypeNotSupportedError, HalFormsDecoderNotAvailableError, HalFormsDecoderRepresentationNotSupportedError, HalFormsEncoderNotAvailableError } from "./errors";
