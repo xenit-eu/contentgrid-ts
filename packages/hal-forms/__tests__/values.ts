@@ -27,6 +27,9 @@ describe("values", () => {
             .withType("datetime")
             .withRequired(true)
         )
+        .addProperty("day", b => b
+            .withType("date")
+        )
         .addProperty("total.net", b => b
             .withType("number")
         )
@@ -43,8 +46,9 @@ describe("values", () => {
     const formValues = createValues(form)
 
     test("Form defaults", () => {
-        expect(formValues.values).toHaveLength(7)
+        expect(formValues.values).toHaveLength(8);
         expect(formValues.value("created_at").value).toBeUndefined();
+        expect(formValues.value("day").value).toBeUndefined();
         expect(formValues.value("total.net").value).toBeUndefined();
         expect(formValues.value("total.vat").value).toBeUndefined();
         expect(formValues.value("name").value).toEqual("Jefke");
@@ -55,12 +59,13 @@ describe("values", () => {
         test("with valid values", () => {
             const withNewData = formValues.withValue("total.vat", 123);
 
-            expect(withNewData.values).toHaveLength(7)
+            expect(withNewData.values).toHaveLength(8);
             expect(withNewData.value("created_at").value).toBeUndefined();
+            expect(formValues.value("day").value).toBeUndefined();
             expect(withNewData.value("total.net").value).toBeUndefined();
             expect(withNewData.value("total.vat").value).toEqual(123);
             expect(withNewData.value("name").value).toEqual("Jefke");
-            expect(withNewData.value("file").value).toBeUndefined()
+            expect(withNewData.value("file").value).toBeUndefined();
             expect(withNewData.value("enabled").value).toBeUndefined();
         })
 
@@ -91,6 +96,8 @@ describe("values", () => {
             const dateArray = [new Date(), new Date()];
             expect(() => formValues.withValue("created_at", dateArray))
                 .toThrowError(new HalFormValueTypeError(form, form.property("created_at"), dateArray))
+            expect(() => formValues.withValue("day", dateArray))
+                .toThrowError(new HalFormValueTypeError(form, form.property("day"), dateArray))
 
             expect(() => formValues.withValue("senders", "/sender/123"))
                 .toThrowError(new HalFormValueTypeError(form, form.property("senders"), "/sender/123"))
@@ -140,12 +147,14 @@ describe("values", () => {
         test("with correct values", () => {
             const withNewData = formValues.withValues({
                 "created_at": new Date(),
+                "day": new Date(),
                 "total.net": 120,
                 "name": "Jaak"
             });
 
-            expect(withNewData.values).toHaveLength(7)
+            expect(withNewData.values).toHaveLength(8);
             expect(withNewData.value("created_at").value).toBeInstanceOf(Date);
+            expect(withNewData.value("day").value).toBeInstanceOf(Date);
             expect(withNewData.value("total.net").value).toEqual(120);
             expect(withNewData.value("total.vat").value).toBeUndefined();
             expect(withNewData.value("name").value).toEqual("Jaak");
