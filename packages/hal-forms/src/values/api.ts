@@ -81,7 +81,7 @@ interface TypedHalFormValue<FieldType extends HalFormsPropertyType, FieldValueTy
 type SpecificTypesHalFormValue = TypedHalFormValue<HalFormsPropertyType.file, File> |
     TypedHalFormValue<HalFormsPropertyType.checkbox, boolean> |
     TypedHalFormValue<HalFormsPropertyType.number | HalFormsPropertyType.range, number> |
-    TypedHalFormValue<HalFormsPropertyType.datetime | HalFormsPropertyType.datetime_local | HalFormsPropertyType.date, Date>;
+    TypedHalFormValue<HalFormsPropertyType.date | HalFormsPropertyType.datetime | HalFormsPropertyType.datetime_local, Date>;
 
 /**
  * All other HAL-FORMS property types map to a string

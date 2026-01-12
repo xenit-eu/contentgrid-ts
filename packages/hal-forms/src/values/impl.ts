@@ -112,6 +112,7 @@ function coerceToValidType(type: HalFormsPropertyType | string, value: FormValue
         return value.map(v => coerceToValidType(type, v));
     }
     switch(type) {
+        case HalFormsPropertyType.date:
         case HalFormsPropertyType.datetime:
         case HalFormsPropertyType.datetime_local:
             if(typeof value === "string") {
@@ -134,6 +135,7 @@ function isValidTypeValue(type: HalFormsPropertyType | string, value: FormValueV
         case HalFormsPropertyType.number:
         case HalFormsPropertyType.range:
             return typeof value === "number" || typeof value === "bigint";
+        case HalFormsPropertyType.date:
         case HalFormsPropertyType.datetime:
         case HalFormsPropertyType.datetime_local:
             return value instanceof Date;
