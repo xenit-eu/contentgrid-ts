@@ -24,7 +24,7 @@
     "@contentgrid/fetch-hooks": "^0.0.0",
     "@types/whatwg-mimetype": "^3.0.2",
     "tslib": "^2.6.1",
-    "whatwg-mimetype": "^4.0.0"
+    "whatwg-mimetype": "^5.0.0"
   },
   "scripts": {
     "prepare": "rollup -c",
