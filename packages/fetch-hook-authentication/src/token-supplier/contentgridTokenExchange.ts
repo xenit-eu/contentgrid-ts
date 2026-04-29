@@ -1,6 +1,6 @@
 import { FetchHooksError } from "@contentgrid/fetch-hooks";
 import { AuthenticationToken, AuthenticationTokenSupplier } from "./types";
-import MimeType from "whatwg-mimetype";
+import { MIMEType } from "whatwg-mimetype";
 import { ValueProvider, ValueProviderResolver } from "@contentgrid/fetch-hooks/value-provider";
 
 
@@ -41,7 +41,7 @@ function isJsonContentType(contentType: string | null): boolean {
     if(!contentType) {
         return false;
     }
-    const mimetype = new MimeType(contentType);
+    const mimetype = new MIMEType(contentType);
 
     // https://mimesniff.spec.whatwg.org/#json-mime-type
     return ((mimetype.type === "application" || mimetype.type === "text") && mimetype.subtype === "json") || mimetype.subtype.endsWith("+json");
