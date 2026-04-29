@@ -372,7 +372,7 @@ describe("Coders.multipartForm()", () => {
         .registerEncoder(() => true, Coders.multipartForm())
         .build();
 
-    test("Encodes default values", () => {
+    test("Encodes default values", async () => {
         const encoded = codecs.requireCodecFor(plainForm)
             .encode(plainEmptyValues);
 
@@ -383,12 +383,11 @@ describe("Coders.multipartForm()", () => {
         expected.append("name", "Jefke");
         expected.append("active", "false");
 
-        expect(encoded.formData())
-            .resolves
-            .toEqual(expected);
+        const actual = await encoded.formData();
+        expect([...actual.entries()]).toEqual([...expected.entries()]);
     })
 
-    test("Encodes values", () => {
+    test("Encodes values", async () => {
         const encoded = codecs.requireCodecFor(plainForm)
             .encode(plainFilledValues);
 
@@ -400,26 +399,29 @@ describe("Coders.multipartForm()", () => {
         expected.append("senders", "http://localhost/users/2");
         expected.append("name", "Pierre");
         expected.append("active", "true");
-        expect(encoded.formData())
-            .resolves
-            .toEqual(expected)
+
+        const actual = await encoded.formData();
+        expect([...actual.entries()]).toEqual([...expected.entries()]);
     });
 
-    test("Encodes file values", () => {
+    test("Encodes file values", async () => {
         const encoded = codecs.requireCodecFor(fileForm).encode(fileFilledValues);
 
-        const expected = new FormData();
-        expected.append("created_at", "2024-03-22T08:12:29.000Z");
-        expected.append("total.net", "123");
-        expected.append("total.vat", "456");
-        expected.append("senders", "http://localhost/users/1");
-        expected.append("senders", "http://localhost/users/2");
-        expected.append("name", "Pierre");
-        expected.append("active", "true");
-        expected.append("file", plainTextFile);
-        expect(encoded.formData())
-            .resolves
-            .toEqual(expected)
+        const actual = await encoded.formData();
+        const stringEntries = [...actual.entries()].filter(([, v]) => typeof v === "string");
+        expect(stringEntries).toEqual([
+            ["created_at", "2024-03-22T08:12:29.000Z"],
+            ["total.net", "123"],
+            ["total.vat", "456"],
+            ["senders", "http://localhost/users/1"],
+            ["senders", "http://localhost/users/2"],
+            ["name", "Pierre"],
+            ["active", "true"],
+        ]);
+        const fileEntry = actual.get("file");
+        expect(fileEntry).toBeInstanceOf(Blob);
+        expect((fileEntry as Blob).size).toEqual(plainTextFile.size);
+        expect((fileEntry as Blob).type).toEqual(plainTextFile.type);
     })
 })
 
