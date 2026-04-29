@@ -13,13 +13,12 @@ describe("createTypedFetch", () => {
     }
 
     test("performs a request", async () => {
-        const fakeFetch = fetchMock.sandbox();
-        fakeFetch.config.Request = Request;
-        const typedFetch = createTypedFetch(fakeFetch as typeof fetch);
+        const fakeFetch = fetchMock.createInstance();
+        const typedFetch = createTypedFetch(fakeFetch.fetchHandler as typeof fetch);
 
-        fakeFetch.post("http://localhost/length", async (_url: any, _options: any, request: Request) => {
+        fakeFetch.post("http://localhost/length", async ({request}) => {
             try {
-                const b = await request.json();
+                const b = await request!.json();
                 return {
                     s: b.s,
                     length: b.s.length

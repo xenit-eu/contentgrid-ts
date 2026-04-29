@@ -4,12 +4,12 @@ import { Fetch } from '../src/hook/core';
 import { setHeader } from '../src/request';
 
 describe("setHeader", () => {
-    const fakeFetch = fetchMock.sandbox();
+    const fakeFetch = fetchMock.createInstance();
 
     const testHeader = "X-Test";
 
-    fakeFetch.get("http://localhost/", async (_url, { headers }) => {
-        const h = new Headers(headers);
+    fakeFetch.get("http://localhost/", async ({options: {headers}}) => {
+        const h = new Headers(headers as HeadersInit);
         return {
             test: h.get(testHeader)
         }
@@ -17,7 +17,7 @@ describe("setHeader", () => {
 
     test("direct value", async () => {
 
-        const hookedFetch = setHeader(testHeader, "1")(fakeFetch as Fetch);
+        const hookedFetch = setHeader(testHeader, "1")(fakeFetch.fetchHandler as Fetch);
 
         const response = await hookedFetch("http://localhost/");
 
@@ -28,7 +28,7 @@ describe("setHeader", () => {
     })
 
     test("value derived from request", async () => {
-        const hookedFetch = setHeader(testHeader, ({ request }) => request.url)(fakeFetch as Fetch);
+        const hookedFetch = setHeader(testHeader, ({ request }) => request.url)(fakeFetch.fetchHandler as Fetch);
 
         const response = await hookedFetch("http://localhost/");
 
@@ -39,7 +39,7 @@ describe("setHeader", () => {
     })
 
     test("value fetched with nested fetch", async () => {
-        const hookedFetch = setHeader(testHeader, async ({ request }) => (await fakeFetch(request)).text())(fakeFetch as Fetch);
+        const hookedFetch = setHeader(testHeader, async ({ request }) => (await fakeFetch.fetchHandler(request)).text())(fakeFetch.fetchHandler as Fetch);
 
         const response = await hookedFetch("http://localhost/");
 
