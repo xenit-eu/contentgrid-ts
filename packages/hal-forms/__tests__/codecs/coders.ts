@@ -105,13 +105,13 @@ describe("Coders.json()", () => {
     test("Refuses to encode files", () => {
         expect(() => codecs.requireCodecFor(fileForm)
             .encode(fileFilledValues))
-            .toThrowError();
+            .toThrow();
     })
 
     test("Refuses to encode files, even when they are not filled in", () => {
         expect(() => codecs.requireCodecFor(fileForm)
             .encode(fileEmptyValues))
-            .toThrowError();
+            .toThrow();
     })
 
     test("Encodes using a custom content type if set on the form", () => {
@@ -169,7 +169,7 @@ describe("Coders.json()", () => {
 
         const decoder = codecs.requireCodecFor(plainForm);
         expect(() => decoder.decode(representation))
-            .toThrowError(new HalFormsDecoderRepresentationNotSupportedError(representation))
+            .toThrow(new HalFormsDecoderRepresentationNotSupportedError(representation))
 
     })
 
@@ -259,12 +259,12 @@ describe("Coders.nestedJson()", () => {
     test("Refuses to encode files", () => {
         expect(() => codecs.requireCodecFor(fileForm)
             .encode(fileFilledValues))
-            .toThrowError();
+            .toThrow();
     })
     test("Refuses to encode files, even when they are not filled in", () => {
         expect(() => codecs.requireCodecFor(fileForm)
             .encode(fileEmptyValues))
-            .toThrowError();
+            .toThrow();
     })
 
 })
@@ -451,13 +451,13 @@ describe("Coders.urlencodedForm()", () => {
     test("Refuses to encode files", () => {
         expect(() => codecs.requireCodecFor(fileForm)
             .encode(fileFilledValues))
-            .toThrowError();
+            .toThrow();
     })
 
     test("Refuses to encode files, even when they are not filled in", () => {
         expect(() => codecs.requireCodecFor(fileForm)
             .encode(fileEmptyValues))
-            .toThrowError();
+            .toThrow();
     })
 
 })
@@ -498,13 +498,13 @@ describe("Coders.urlencodedQuerystring()", () => {
     test("Refuses to encode files", () => {
         expect(() => codecs.requireCodecFor(fileForm)
             .encode(fileFilledValues))
-            .toThrowError();
+            .toThrow();
     })
 
     test("Refuses to encode files, even when they are not filled in", () => {
         expect(() => codecs.requireCodecFor(fileForm)
             .encode(fileEmptyValues))
-            .toThrowError();
+            .toThrow();
     })
 
 })
