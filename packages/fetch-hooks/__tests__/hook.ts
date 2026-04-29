@@ -105,7 +105,7 @@ describe("hook", () => {
 
         expect(hookedResponsePromise)
             .rejects
-            .toThrowError(new DuplicateInvocationError("FetchHookInvocation#next()"))
+            .toThrow(new DuplicateInvocationError("FetchHookInvocation#next()"))
     })
 
     test("start of hook chain is accessible", async () => {

@@ -40,7 +40,7 @@ describe("HalFormsCodecs", () => {
         test("throws when an unsupported property type is used", () => {
             const fileForm = form.addProperty("file", p => p.withType("file"));
             expect(() => codecs.findCodecFor(fileForm))
-                .toThrowError(new HalFormsCodecPropertyTypeNotSupportedError(fileForm, fileForm.property("file")));
+                .toThrow(new HalFormsCodecPropertyTypeNotSupportedError(fileForm, fileForm.property("file")));
         })
     });
 
@@ -54,7 +54,7 @@ describe("HalFormsCodecs", () => {
         test("does not find a required codec", () => {
             const empty = HalFormsCodecs.builder().build();
             expect(() => empty.requireCodecFor(form))
-                .toThrowError(new HalFormsCodecNotAvailableError(form));
+                .toThrow(new HalFormsCodecNotAvailableError(form));
         })
     })
 

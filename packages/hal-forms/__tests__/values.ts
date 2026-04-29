@@ -77,35 +77,35 @@ describe("values", () => {
         test("with an invalid value type", () => {
 
             expect(() => formValues.withValue("total.vat", null as any))
-                .toThrowError(new HalFormValueTypeError(form, form.property("total.vat"), null))
+                .toThrow(new HalFormValueTypeError(form, form.property("total.vat"), null))
 
             expect(() => formValues.withValue("total.vat", "123"))
-                .toThrowError(new HalFormValueTypeError(form, form.property("total.vat"), "123"))
+                .toThrow(new HalFormValueTypeError(form, form.property("total.vat"), "123"))
 
             expect(() => formValues.withValue("total.vat", false))
-                .toThrowError(new HalFormValueTypeError(form, form.property("total.vat"), false))
+                .toThrow(new HalFormValueTypeError(form, form.property("total.vat"), false))
 
             expect(() => formValues.withValue("created_at", false))
-                .toThrowError(new HalFormValueTypeError(form, form.property("created_at"), false))
+                .toThrow(new HalFormValueTypeError(form, form.property("created_at"), false))
 
             const dateArray = [new Date(), new Date()];
             expect(() => formValues.withValue("created_at", dateArray))
-                .toThrowError(new HalFormValueTypeError(form, form.property("created_at"), dateArray))
+                .toThrow(new HalFormValueTypeError(form, form.property("created_at"), dateArray))
 
             expect(() => formValues.withValue("senders", "/sender/123"))
-                .toThrowError(new HalFormValueTypeError(form, form.property("senders"), "/sender/123"))
+                .toThrow(new HalFormValueTypeError(form, form.property("senders"), "/sender/123"))
 
             expect(() => formValues.withValue("senders", [["/abc"] as any]))
-                .toThrowError(new HalFormValueTypeError(form, form.property("senders"), [["/abc"]]))
+                .toThrow(new HalFormValueTypeError(form, form.property("senders"), [["/abc"]]))
 
             expect(() => formValues.withValue("senders", dateArray))
-                .toThrowError(new HalFormValueTypeError(form, form.property("senders"), dateArray))
+                .toThrow(new HalFormValueTypeError(form, form.property("senders"), dateArray))
 
             expect(() => formValues.withValue("picture", "abc"))
-                .toThrowError(new HalFormValueTypeError(form, form.property("picture"), "abc"))
+                .toThrow(new HalFormValueTypeError(form, form.property("picture"), "abc"))
 
             expect(() => formValues.withValue("enabled", "xyz"))
-                .toThrowError(new HalFormValueTypeError(form, form.property("enabled"), "xyz"))
+                .toThrow(new HalFormValueTypeError(form, form.property("enabled"), "xyz"))
 
         })
 
