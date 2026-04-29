@@ -5,16 +5,15 @@ import createHook from '../src/hook';
 import { DuplicateInvocationError, FetchHookInvocationImpl } from '../src/hook/invocation';
 
 describe("hook", () => {
-    const fakeFetch = fetchMock.sandbox();
+    const fakeFetch = fetchMock.createInstance();
 
-    fakeFetch.post("http://localhost/length", async (_url, {headers, body}) => {
-        const h = new Headers(headers)
+    fakeFetch.post("http://localhost/length", async ({options: {headers, body}}) => {
+        const h = new Headers(headers as HeadersInit)
         if(!h.has("X-Loopback")) {
             return 402;
         }
         try {
-            // This is fetchMock being annoying and having mismatched types between what body actually is, and what it pretends to be
-            const b = JSON.parse((await body) as string);
+            const b = JSON.parse(body as string);
             return {
                 s: b.s,
                 length: b.s.length
@@ -25,8 +24,8 @@ describe("hook", () => {
         }
     })
 
-    fakeFetch.get("http://example.com/xyz", async (_url, {headers}) => {
-        const h = new Headers(headers)
+    fakeFetch.get("http://example.com/xyz", async ({options: {headers}}) => {
+        const h = new Headers(headers as HeadersInit)
         if(!h.has("X-Loopback")) {
             return 402;
         }
@@ -44,10 +43,10 @@ describe("hook", () => {
             return next();
         });
 
-        const hookedFetch = fetchHook(fakeFetch as Fetch);
+        const hookedFetch = fetchHook(fakeFetch.fetchHandler as Fetch);
 
 
-        const unhookedResponse = await fakeFetch("http://localhost/length", {
+        const unhookedResponse = await fakeFetch.fetchHandler("http://localhost/length", {
             method: "POST",
             body: JSON.stringify({ s: "def" })
         });
@@ -76,7 +75,7 @@ describe("hook", () => {
             return next(newRequest);
         });
 
-        const hookedFetch = rewriteHook(fakeFetch as Fetch);
+        const hookedFetch = rewriteHook(fakeFetch.fetchHandler as Fetch);
 
         const hookedResponse = await hookedFetch("http://example.com/abc", {
             method: "POST",
@@ -96,7 +95,7 @@ describe("hook", () => {
             return response;
         });
 
-        const hookedFetch = brokenHook(fakeFetch as Fetch);
+        const hookedFetch = brokenHook(fakeFetch.fetchHandler as Fetch);
 
         const hookedResponsePromise = hookedFetch("http://localhost/length", {
             method: "POST",
@@ -151,7 +150,7 @@ describe("hook", () => {
             return invocation.next();
         });
 
-        const hookedFetch = recursiveInvocationCheckHook(loopbackHook(subRequestHook((fakeFetch as Fetch))));
+        const hookedFetch = recursiveInvocationCheckHook(loopbackHook(subRequestHook((fakeFetch.fetchHandler as Fetch))));
 
         const hookedResponse = await hookedFetch("http://localhost/length", {
             method: "POST" // Method POST, so we can later set the body

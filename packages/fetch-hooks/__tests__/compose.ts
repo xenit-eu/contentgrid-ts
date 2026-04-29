@@ -5,12 +5,12 @@ import { compose } from '../src/compose';
 import { appendHeader } from '../src/request';
 
 test("compose", async () => {
-    const fakeFetch = fetchMock.sandbox();
+    const fakeFetch = fetchMock.createInstance();
 
     const testHeader = "X-Test";
 
-    fakeFetch.get("http://localhost/", async (_url, {headers}) => {
-        const h = new Headers(headers);
+    fakeFetch.get("http://localhost/", async ({options: {headers}}) => {
+        const h = new Headers(headers as HeadersInit);
         return {
             test: h.get(testHeader)
         }
@@ -22,7 +22,7 @@ test("compose", async () => {
         appendHeader(testHeader, "3")
     );
 
-    const hookedFetch = fetchHook(fakeFetch as Fetch);
+    const hookedFetch = fetchHook(fakeFetch.fetchHandler as Fetch);
 
     const response = await hookedFetch("http://localhost/");
 

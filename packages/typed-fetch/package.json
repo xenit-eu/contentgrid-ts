@@ -37,6 +37,6 @@
     "directory": "packages/typed-fetch"
   },
   "devDependencies": {
-    "fetch-mock": "^11.0.0"
+    "fetch-mock": "^12.0.0"
   }
 }
