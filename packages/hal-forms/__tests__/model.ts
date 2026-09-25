@@ -152,3 +152,78 @@ describe("resolveTemplate", () => {
     })
 
 })
+
+describe("property options", () => {
+    const object: HalObjectShape<{
+        _templates: {
+            default: HalFormsTemplateShape
+        }
+    }> = {
+        _links: {
+            self: {
+                href: "http://localhost/item/4"
+            }
+        },
+        _templates: {
+            default: {
+                method: "POST",
+                properties: [
+                    {
+                        name: "tags",
+                        type: "text",
+                        options: {
+                            minItems: 0
+                        }
+                    },
+                    {
+                        name: "single",
+                        type: "text",
+                        options: {
+                            maxItems: 1
+                        }
+                    },
+                    {
+                        name: "no-choices",
+                        type: "text",
+                        options: {
+                            inline: []
+                        }
+                    }
+                ]
+            }
+        }
+    } as const;
+
+    const template = resolveTemplate(object, "default")!;
+
+    test("options without inline or link are empty", async () => {
+        const property = template.property("tags");
+        const options = property.options!;
+
+        expect(options.isEmpty()).toBe(true);
+        expect(options.isInline()).toBe(false);
+        expect(options.isRemote()).toBe(false);
+        expect(options).not.toHaveProperty("inline");
+        expect(options).not.toHaveProperty("link");
+        expect(options.minItems).toBe(0);
+        expect(options.maxItems).toBe(Infinity);
+        expect(property.multiValue).toBe(true);
+        await expect(options.loadOptions(() => { throw new Error("Not implemented") }))
+            .resolves
+            .toEqual([]);
+    })
+
+    test("empty options with maxItems 1 are single-valued", () => {
+        const property = template.property("single");
+
+        expect(property.options!.isEmpty()).toBe(true);
+        expect(property.multiValue).toBe(false);
+    })
+
+    test("empty inline options are not empty options", () => {
+        const options = template.property("no-choices").options!;
+
+        expect(options.isInline()).toBe(true);
+        expect(options.isEmpty()).toBe(false);
+    })
+});
