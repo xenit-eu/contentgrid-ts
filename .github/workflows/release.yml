@@ -1,8 +1,11 @@
-name: build
+name: release
+permissions:
+  contents: read
+  id-token: write
 on:
   push:
-  pull_request:
-  workflow_dispatch:
+    tags:
+      - 'v*'
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,6 +18,7 @@ jobs:
           node-version: 24
           registry-url: 'https://registry.npmjs.org'
           scope: '@contentgrid'
+          package-manager-cache: false
       - run: |
           corepack enable
           yarn install --frozen-lockfile
@@ -22,3 +26,6 @@ jobs:
         run: yarn build
       - name: Test
         run: yarn test
+      - name: Publish
+        run:
+          yarn lerna publish "${{ github.ref_name }}" --yes --no-push --no-git-tag-version --force-publish
