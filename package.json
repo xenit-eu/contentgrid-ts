@@ -9,10 +9,10 @@
     "test": "lerna exec yarn test"
   },
   "devDependencies": {
-    "@babel/core": "^7.22.9",
-    "@babel/plugin-transform-runtime": "^7.22.9",
-    "@babel/preset-env": "^7.22.9",
-    "@babel/preset-typescript": "^7.22.5",
+    "@babel/core": "^8.0.0",
+    "@babel/plugin-transform-runtime": "^8.0.0",
+    "@babel/preset-env": "^8.0.0",
+    "@babel/preset-typescript": "^8.0.0",
     "@jest/globals": "^30.0.0",
     "@rollup/plugin-babel": "^7.0.0",
     "@rollup/plugin-typescript": "^12.0.0",
