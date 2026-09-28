@@ -1,4 +1,4 @@
-import { HalFormsProperty, HalFormsPropertyInlineOptions, HalFormsPropertyOption, HalFormsPropertyRemoteOptions, HalFormsTemplate } from "./api";
+import { HalFormsProperty, HalFormsPropertyInlineOptions, HalFormsPropertyNoOptions, HalFormsPropertyOption, HalFormsPropertyRemoteOptions, HalFormsTemplate } from "./api";
 import { MATCH_ANYTHING, MATCH_NOTHING } from "./_internal";
 import { TypedRequestSpec } from "@contentgrid/typed-fetch";
 import { HalFormsPropertyType, HalFormsPropertyValue } from "./_shape";
@@ -97,7 +97,7 @@ export class HalFormsPropertyBuilder implements HalFormsProperty {
     ) {
     }
 
-    public get options(): HalFormsPropertyInlineOptions | HalFormsPropertyRemoteOptions | null {
+    public get options(): HalFormsPropertyInlineOptions | HalFormsPropertyRemoteOptions | HalFormsPropertyNoOptions | null {
         if(this._options === null) {
             return null;
         }
@@ -169,7 +169,7 @@ export interface HalFormsPropertyOptionsBuilder {
     withRemote(link: SimpleLink): HalFormsPropertyOptionsBuilder;
     withMaxItems(maxItems: number): HalFormsPropertyOptionsBuilder;
     withMinItems(minItems: number): HalFormsPropertyOptionsBuilder;
-    build(): HalFormsPropertyInlineOptions | HalFormsPropertyRemoteOptions;
+    build(): HalFormsPropertyInlineOptions | HalFormsPropertyRemoteOptions | HalFormsPropertyNoOptions;
 }
 
 type Writeable<T> = {
@@ -215,7 +215,7 @@ class HalFormsPropertyOptionsImpl implements HalFormsPropertyInlineOptions<HalFo
         return new HalFormsPropertyOptionsImpl(this.inline, this.link, this.maxItems, minItems);
     }
 
-    public build(): HalFormsPropertyInlineOptions<unknown> | HalFormsPropertyRemoteOptions<unknown> {
+    public build(): HalFormsPropertyInlineOptions<unknown> | HalFormsPropertyRemoteOptions<unknown> | HalFormsPropertyNoOptions<unknown> {
         return this;
     }
 
@@ -230,11 +230,15 @@ class HalFormsPropertyOptionsImpl implements HalFormsPropertyInlineOptions<HalFo
     public async loadOptions(): Promise<readonly HalFormsPropertyOption[]>;
     public async loadOptions(fetcher: (link: SimpleLink) => Promise<readonly HalFormsPropertyOption[]>): Promise<readonly HalFormsPropertyOption[]>;
     public async loadOptions(fetcher?: (link: SimpleLink) => Promise<readonly HalFormsPropertyOption[]>): Promise<readonly HalFormsPropertyOption[]> {
-        if (this.isRemote() && fetcher) {
+        // Checks fields directly: the type guards would narrow `this` to `never`, as this class implements both option types
+        if (this.link !== undefined) {
+            if (!fetcher) {
+                throw new Error("Remote options require a fetcher");
+            }
             return await fetcher(this.link);
         }
 
-        if (this.isInline()) {
+        if (this.inline !== undefined) {
             return this.inline;
         }
 
@@ -248,7 +252,6 @@ class HalFormsPropertyOptionsImpl implements HalFormsPropertyInlineOptions<HalFo
     public isRemote(): this is HalFormsPropertyRemoteOptions<HalFormsPropertyOption> {
         return this.link !== undefined;
     }
-
 }
 
 

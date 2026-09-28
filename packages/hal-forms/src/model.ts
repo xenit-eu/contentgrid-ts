@@ -1,4 +1,4 @@
-import { HalFormsProperty, HalFormsPropertyInlineOptions, HalFormsPropertyOption, HalFormsPropertyRemoteOptions, HalFormsTemplate } from "./api";
+import { HalFormsProperty, HalFormsPropertyInlineOptions, HalFormsPropertyNoOptions, HalFormsPropertyOption, HalFormsPropertyRemoteOptions, HalFormsTemplate } from "./api";
 import { MATCH_ANYTHING, MATCH_NOTHING } from "./_internal";
 import { HalFormsPropertyOptionsShape, HalFormsPropertyShape, HalFormsPropertyValue, HalFormsTemplateShape, HalObjectWithTemplateShape, TemplateTypedRequest } from "./_shape";
 import { TypedRequestSpec } from "@contentgrid/typed-fetch";
@@ -85,7 +85,7 @@ class HalFormsPropertyImpl<OptionType = unknown> implements HalFormsProperty<Opt
         return this.model?.type ?? "text";
     }
 
-    get options(): HalFormsPropertyInlineOptions<OptionType> | HalFormsPropertyRemoteOptions<OptionType> | null {
+    get options(): HalFormsPropertyInlineOptions<OptionType> | HalFormsPropertyRemoteOptions<OptionType> | HalFormsPropertyNoOptions<OptionType> | null {
         const options = this.model?.options;
         if(options?.inline) {
             return new HalFormsPropertyInlineOptionsImpl(this._template, this, options)
@@ -94,7 +94,7 @@ class HalFormsPropertyImpl<OptionType = unknown> implements HalFormsProperty<Opt
             return new HalFormsPropertyRemoteOptionsImpl(this._template, this, options)
         }
         if(options) {
-            return new HalFormsPropertyInlineOptionsImpl(this._template, this, options)
+            return new HalFormsPropertyNoOptionsImpl(this._template, this, options)
         } else {
             return null;
         }
@@ -207,6 +207,9 @@ class HalFormsPropertyRemoteOptionsImpl<T = unknown> extends HalFormsPropertyCom
     }
 
     public async loadOptions(fetcher: (link: SimpleLink) => Promise<readonly T[]>): Promise<readonly HalFormsPropertyOption[]> {
+        if (!fetcher) {
+            throw new Error("Remote options require a fetcher");
+        }
         const data = await fetcher(this.link);
 
         return data.map(value => this.toOption(value));
@@ -219,7 +222,21 @@ class HalFormsPropertyRemoteOptionsImpl<T = unknown> extends HalFormsPropertyCom
     public isRemote(): this is HalFormsPropertyRemoteOptions<T> {
         return true;
     }
+}
 
+class HalFormsPropertyNoOptionsImpl<T = unknown> extends HalFormsPropertyCommonOptionsImpl<T> implements HalFormsPropertyNoOptions<T> {
+
+    public loadOptions(): Promise<readonly HalFormsPropertyOption[]> {
+        return Promise.reject(new Error("Options are not inline or remote"));
+    }
+
+    public isInline(): this is HalFormsPropertyInlineOptions<T> {
+        return false;
+    }
+
+    public isRemote(): this is HalFormsPropertyRemoteOptions<T> {
+        return false;
+    }
 }
 
 type ExtractTemplate<TemplateName extends string, Entity extends HalObjectWithTemplateShape<object, TemplateName, any, any>> = Exclude<Exclude<Entity["_templates"], undefined>[TemplateName], undefined>;

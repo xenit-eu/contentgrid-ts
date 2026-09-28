@@ -152,3 +152,77 @@ describe("resolveTemplate", () => {
     })
 
 })
+
+describe("property options", () => {
+    const object: HalObjectShape<{
+        _templates: {
+            default: HalFormsTemplateShape
+        }
+    }> = {
+        _links: {
+            self: {
+                href: "http://localhost/item/4"
+            }
+        },
+        _templates: {
+            default: {
+                method: "POST",
+                properties: [
+                    {
+                        name: "tags",
+                        type: "text",
+                        options: {
+                            minItems: 0
+                        }
+                    },
+                    {
+                        name: "single",
+                        type: "text",
+                        options: {
+                            maxItems: 1
+                        }
+                    },
+                    {
+                        name: "no-choices",
+                        type: "text",
+                        options: {
+                            inline: []
+                        }
+                    }
+                ]
+            }
+        }
+    } as const;
+
+    const template = resolveTemplate(object, "default")!;
+
+    test("options without inline or link are no options", async () => {
+        const property = template.property("tags");
+        const options = property.options!;
+
+        expect(options.isInline()).toBe(false);
+        expect(options.isRemote()).toBe(false);
+        expect(options).not.toHaveProperty("inline");
+        expect(options).not.toHaveProperty("link");
+        expect(options.minItems).toBe(0);
+        expect(options.maxItems).toBe(Infinity);
+        expect(property.multiValue).toBe(true);
+        await expect(options.loadOptions(() => { throw new Error("Not implemented") }))
+            .rejects
+            .toThrow("Options are not inline or remote");
+    })
+
+    test("no options with maxItems 1 are single-valued", () => {
+        const property = template.property("single");
+
+        expect(property.options!.isInline()).toBe(false);
+        expect(property.options!.isRemote()).toBe(false);
+        expect(property.multiValue).toBe(false);
+    })
+
+    test("empty inline options are inline options", () => {
+        const options = template.property("no-choices").options!;
+
+        expect(options.isInline()).toBe(true);
+    })
+});
