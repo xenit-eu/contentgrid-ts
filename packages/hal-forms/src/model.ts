@@ -1,4 +1,4 @@
-import { HalFormsProperty, HalFormsPropertyEmptyOptions, HalFormsPropertyInlineOptions, HalFormsPropertyOption, HalFormsPropertyRemoteOptions, HalFormsTemplate } from "./api";
+import { HalFormsProperty, HalFormsPropertyInlineOptions, HalFormsPropertyNoOptions, HalFormsPropertyOption, HalFormsPropertyRemoteOptions, HalFormsTemplate } from "./api";
 import { MATCH_ANYTHING, MATCH_NOTHING } from "./_internal";
 import { HalFormsPropertyOptionsShape, HalFormsPropertyShape, HalFormsPropertyValue, HalFormsTemplateShape, HalObjectWithTemplateShape, TemplateTypedRequest } from "./_shape";
 import { TypedRequestSpec } from "@contentgrid/typed-fetch";
@@ -85,7 +85,7 @@ class HalFormsPropertyImpl<OptionType = unknown> implements HalFormsProperty<Opt
         return this.model?.type ?? "text";
     }
 
-    get options(): HalFormsPropertyInlineOptions<OptionType> | HalFormsPropertyRemoteOptions<OptionType> | HalFormsPropertyEmptyOptions<OptionType> | null {
+    get options(): HalFormsPropertyInlineOptions<OptionType> | HalFormsPropertyRemoteOptions<OptionType> | HalFormsPropertyNoOptions<OptionType> | null {
         const options = this.model?.options;
         if(options?.inline) {
             return new HalFormsPropertyInlineOptionsImpl(this._template, this, options)
@@ -94,7 +94,7 @@ class HalFormsPropertyImpl<OptionType = unknown> implements HalFormsProperty<Opt
             return new HalFormsPropertyRemoteOptionsImpl(this._template, this, options)
         }
         if(options) {
-            return new HalFormsPropertyEmptyOptionsImpl(this._template, this, options)
+            return new HalFormsPropertyNoOptionsImpl(this._template, this, options)
         } else {
             return null;
         }
@@ -197,10 +197,6 @@ class HalFormsPropertyInlineOptionsImpl<T = unknown> extends HalFormsPropertyCom
     public isRemote(): this is HalFormsPropertyRemoteOptions<T> {
         return false;
     }
-
-    public isEmpty(): this is HalFormsPropertyEmptyOptions<T> {
-        return false;
-    }
 }
 
 class HalFormsPropertyRemoteOptionsImpl<T = unknown> extends HalFormsPropertyCommonOptionsImpl<T> implements HalFormsPropertyRemoteOptions<T> {
@@ -223,13 +219,9 @@ class HalFormsPropertyRemoteOptionsImpl<T = unknown> extends HalFormsPropertyCom
     public isRemote(): this is HalFormsPropertyRemoteOptions<T> {
         return true;
     }
-
-    public isEmpty(): this is HalFormsPropertyEmptyOptions<T> {
-        return false;
-    }
 }
 
-class HalFormsPropertyEmptyOptionsImpl<T = unknown> extends HalFormsPropertyCommonOptionsImpl<T> implements HalFormsPropertyEmptyOptions<T> {
+class HalFormsPropertyNoOptionsImpl<T = unknown> extends HalFormsPropertyCommonOptionsImpl<T> implements HalFormsPropertyNoOptions<T> {
 
     public loadOptions(): Promise<readonly HalFormsPropertyOption[]> {
         return Promise.resolve([]);
@@ -241,10 +233,6 @@ class HalFormsPropertyEmptyOptionsImpl<T = unknown> extends HalFormsPropertyComm
 
     public isRemote(): this is HalFormsPropertyRemoteOptions<T> {
         return false;
-    }
-
-    public isEmpty(): this is HalFormsPropertyEmptyOptions<T> {
-        return true;
     }
 }
 

@@ -16,7 +16,7 @@ export interface HalFormsProperty<OptionType = unknown> {
     readonly readOnly: boolean;
     readonly required: boolean;
     readonly type: HalFormsPropertyType | string;
-    readonly options: HalFormsPropertyInlineOptions<OptionType> | HalFormsPropertyRemoteOptions<OptionType> | HalFormsPropertyEmptyOptions<OptionType> | null;
+    readonly options: HalFormsPropertyInlineOptions<OptionType> | HalFormsPropertyRemoteOptions<OptionType> | HalFormsPropertyNoOptions<OptionType> | null;
     readonly multiValue: boolean;
     readonly regex: RegExp;
     readonly minLength: number;
@@ -33,7 +33,6 @@ interface HalFormsPropertyCommonOptions<T> {
     loadOptions(fetcher: (link: SimpleLink) => Promise<readonly T[]>): Promise<readonly HalFormsPropertyOption[]>
     isInline(): this is HalFormsPropertyInlineOptions<T>;
     isRemote(): this is HalFormsPropertyRemoteOptions<T>;
-    isEmpty(): this is HalFormsPropertyEmptyOptions<T>;
 }
 
 export interface HalFormsPropertyInlineOptions<T = unknown> extends HalFormsPropertyCommonOptions<T> {
@@ -49,7 +48,7 @@ export interface HalFormsPropertyRemoteOptions<T = unknown> extends HalFormsProp
  *
  * Combined with `maxItems` unset (or > 1), this models a multi-valued free-text property.
  */
-export interface HalFormsPropertyEmptyOptions<T = unknown> extends HalFormsPropertyCommonOptions<T> {
+export interface HalFormsPropertyNoOptions<T = unknown> extends HalFormsPropertyCommonOptions<T> {
     readonly inline?: never;
     readonly link?: never;
 }

@@ -1,4 +1,4 @@
-import { HalFormsProperty, HalFormsPropertyEmptyOptions, HalFormsPropertyInlineOptions, HalFormsPropertyOption, HalFormsPropertyRemoteOptions, HalFormsTemplate } from "./api";
+import { HalFormsProperty, HalFormsPropertyInlineOptions, HalFormsPropertyNoOptions, HalFormsPropertyOption, HalFormsPropertyRemoteOptions, HalFormsTemplate } from "./api";
 import { MATCH_ANYTHING, MATCH_NOTHING } from "./_internal";
 import { TypedRequestSpec } from "@contentgrid/typed-fetch";
 import { HalFormsPropertyType, HalFormsPropertyValue } from "./_shape";
@@ -97,7 +97,7 @@ export class HalFormsPropertyBuilder implements HalFormsProperty {
     ) {
     }
 
-    public get options(): HalFormsPropertyInlineOptions | HalFormsPropertyRemoteOptions | HalFormsPropertyEmptyOptions | null {
+    public get options(): HalFormsPropertyInlineOptions | HalFormsPropertyRemoteOptions | HalFormsPropertyNoOptions | null {
         if(this._options === null) {
             return null;
         }
@@ -169,7 +169,7 @@ export interface HalFormsPropertyOptionsBuilder {
     withRemote(link: SimpleLink): HalFormsPropertyOptionsBuilder;
     withMaxItems(maxItems: number): HalFormsPropertyOptionsBuilder;
     withMinItems(minItems: number): HalFormsPropertyOptionsBuilder;
-    build(): HalFormsPropertyInlineOptions | HalFormsPropertyRemoteOptions | HalFormsPropertyEmptyOptions;
+    build(): HalFormsPropertyInlineOptions | HalFormsPropertyRemoteOptions | HalFormsPropertyNoOptions;
 }
 
 type Writeable<T> = {
@@ -215,11 +215,7 @@ class HalFormsPropertyOptionsImpl implements HalFormsPropertyInlineOptions<HalFo
         return new HalFormsPropertyOptionsImpl(this.inline, this.link, this.maxItems, minItems);
     }
 
-    public build(): HalFormsPropertyInlineOptions<unknown> | HalFormsPropertyRemoteOptions<unknown> | HalFormsPropertyEmptyOptions<unknown> {
-        if(this.isEmpty()) {
-            // 'inline' and 'link' are deleted in the constructor, so this satisfies HalFormsPropertyEmptyOptions at runtime
-            return this as unknown as HalFormsPropertyEmptyOptions<unknown>;
-        }
+    public build(): HalFormsPropertyInlineOptions<unknown> | HalFormsPropertyRemoteOptions<unknown> | HalFormsPropertyNoOptions<unknown> {
         return this;
     }
 
@@ -234,10 +230,6 @@ class HalFormsPropertyOptionsImpl implements HalFormsPropertyInlineOptions<HalFo
     public async loadOptions(): Promise<readonly HalFormsPropertyOption[]>;
     public async loadOptions(fetcher: (link: SimpleLink) => Promise<readonly HalFormsPropertyOption[]>): Promise<readonly HalFormsPropertyOption[]>;
     public async loadOptions(fetcher?: (link: SimpleLink) => Promise<readonly HalFormsPropertyOption[]>): Promise<readonly HalFormsPropertyOption[]> {
-        if (this.isEmpty()) {
-            return [];
-        }
-
         if (this.isRemote() && fetcher) {
             return await fetcher(this.link);
         }
@@ -246,7 +238,7 @@ class HalFormsPropertyOptionsImpl implements HalFormsPropertyInlineOptions<HalFo
             return this.inline;
         }
 
-        throw new Error("Options are not inline or remote");
+        return [];
     }
 
     public isInline(): this is HalFormsPropertyInlineOptions<HalFormsPropertyOption> {
@@ -256,11 +248,6 @@ class HalFormsPropertyOptionsImpl implements HalFormsPropertyInlineOptions<HalFo
     public isRemote(): this is HalFormsPropertyRemoteOptions<HalFormsPropertyOption> {
         return this.link !== undefined;
     }
-
-    public isEmpty(): this is HalFormsPropertyEmptyOptions<HalFormsPropertyOption> {
-        return this.inline === undefined && this.link === undefined;
-    }
-
 }
 
 

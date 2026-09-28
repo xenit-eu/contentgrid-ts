@@ -21,7 +21,6 @@ describe("HalFormsTemplateBuilder", () => {
         const property = template.property("tags");
         const options = property.options!;
 
-        expect(options.isEmpty()).toBe(true);
         expect(options.isInline()).toBe(false);
         expect(options.isRemote()).toBe(false);
         expect(property.multiValue).toBe(true);
@@ -34,6 +33,6 @@ describe("HalFormsTemplateBuilder", () => {
         const template = buildTemplate("POST", "/")
             .addProperty("color", p => p.addOption("red"));
 
-        expect(template.property("color").options!.isEmpty()).toBe(false);
+        expect(template.property("color").options!.isInline()).toBe(true);
     })
 });

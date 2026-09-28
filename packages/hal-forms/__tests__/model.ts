@@ -200,7 +200,6 @@ describe("property options", () => {
         const property = template.property("tags");
         const options = property.options!;
 
-        expect(options.isEmpty()).toBe(true);
         expect(options.isInline()).toBe(false);
         expect(options.isRemote()).toBe(false);
         expect(options).not.toHaveProperty("inline");
@@ -216,7 +215,8 @@ describe("property options", () => {
     test("empty options with maxItems 1 are single-valued", () => {
         const property = template.property("single");
 
-        expect(property.options!.isEmpty()).toBe(true);
+        expect(property.options!.isInline()).toBe(false);
+        expect(property.options!.isRemote()).toBe(false);
         expect(property.multiValue).toBe(false);
     })
 
@@ -224,6 +224,5 @@ describe("property options", () => {
         const options = template.property("no-choices").options!;
 
         expect(options.isInline()).toBe(true);
-        expect(options.isEmpty()).toBe(false);
     })
 });
