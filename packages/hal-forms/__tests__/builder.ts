@@ -1,3 +1,4 @@
+import { SimpleLink } from "@contentgrid/hal";
 import buildTemplate, { HalFormsTemplateBuilder } from "../src/builder";
 
 describe("HalFormsTemplateBuilder", () => {
@@ -14,7 +15,7 @@ describe("HalFormsTemplateBuilder", () => {
         expect(fromTemplate.properties[0]?.prompt).toEqual("Test");
     })
 
-    it("builds empty options", async () => {
+    it("builds no options", async () => {
         const template = buildTemplate("POST", "/")
             .addProperty("tags", p => p.withOptions(o => o.withMinItems(0)));
 
@@ -29,7 +30,30 @@ describe("HalFormsTemplateBuilder", () => {
             .toEqual([]);
     })
 
-    it("builds inline options that are not empty", () => {
+    it("builds remote options", async () => {
+        const template = buildTemplate("POST", "/")
+            .addProperty("sender", p => p.withOptions(o => o.withRemote(new SimpleLink({ href: "/senders" }))));
+
+        const options = template.property("sender").options!;
+
+        expect(options.isInline()).toBe(false);
+        expect(options.isRemote()).toBe(true);
+
+        const remoteOptions = [
+            {"prompt": "John", "value": "john@example.test"},
+            {"prompt": "Alice", "value": "alice@example.test"}
+        ];
+
+        await expect(options.loadOptions(() => Promise.resolve(remoteOptions)))
+            .resolves
+            .toEqual(remoteOptions);
+
+        await expect((options.loadOptions as () => Promise<unknown>)())
+            .rejects
+            .toThrow("Remote options require a fetcher");
+    })
+
+    it("builds inline options", () => {
         const template = buildTemplate("POST", "/")
             .addProperty("color", p => p.addOption("red"));
 

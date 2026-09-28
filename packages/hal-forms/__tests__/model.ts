@@ -196,7 +196,7 @@ describe("property options", () => {
 
     const template = resolveTemplate(object, "default")!;
 
-    test("options without inline or link are empty", async () => {
+    test("options without inline or link are no options", async () => {
         const property = template.property("tags");
         const options = property.options!;
 
@@ -212,7 +212,7 @@ describe("property options", () => {
             .toEqual([]);
     })
 
-    test("empty options with maxItems 1 are single-valued", () => {
+    test("no options with maxItems 1 are single-valued", () => {
         const property = template.property("single");
 
         expect(property.options!.isInline()).toBe(false);
@@ -220,7 +220,7 @@ describe("property options", () => {
         expect(property.multiValue).toBe(false);
     })
 
-    test("empty inline options are not empty options", () => {
+    test("empty inline options are inline options", () => {
         const options = template.property("no-choices").options!;
 
         expect(options.isInline()).toBe(true);

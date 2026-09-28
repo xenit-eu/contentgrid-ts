@@ -230,11 +230,15 @@ class HalFormsPropertyOptionsImpl implements HalFormsPropertyInlineOptions<HalFo
     public async loadOptions(): Promise<readonly HalFormsPropertyOption[]>;
     public async loadOptions(fetcher: (link: SimpleLink) => Promise<readonly HalFormsPropertyOption[]>): Promise<readonly HalFormsPropertyOption[]>;
     public async loadOptions(fetcher?: (link: SimpleLink) => Promise<readonly HalFormsPropertyOption[]>): Promise<readonly HalFormsPropertyOption[]> {
-        if (this.isRemote() && fetcher) {
+        // Checks fields directly: the type guards would narrow `this` to `never`, as this class implements both option types
+        if (this.link !== undefined) {
+            if (!fetcher) {
+                throw new Error("Remote options require a fetcher");
+            }
             return await fetcher(this.link);
         }
 
-        if (this.isInline()) {
+        if (this.inline !== undefined) {
             return this.inline;
         }
 
