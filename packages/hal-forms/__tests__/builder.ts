@@ -26,8 +26,8 @@ describe("HalFormsTemplateBuilder", () => {
         expect(options.isRemote()).toBe(false);
         expect(property.multiValue).toBe(true);
         await expect(options.loadOptions(() => { throw new Error("Not implemented") }))
-            .resolves
-            .toEqual([]);
+            .rejects
+            .toThrow("Options are not inline or remote");
     })
 
     it("builds remote options", async () => {

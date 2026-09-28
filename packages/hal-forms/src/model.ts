@@ -207,6 +207,9 @@ class HalFormsPropertyRemoteOptionsImpl<T = unknown> extends HalFormsPropertyCom
     }
 
     public async loadOptions(fetcher: (link: SimpleLink) => Promise<readonly T[]>): Promise<readonly HalFormsPropertyOption[]> {
+        if (!fetcher) {
+            throw new Error("Remote options require a fetcher");
+        }
         const data = await fetcher(this.link);
 
         return data.map(value => this.toOption(value));
@@ -224,7 +227,7 @@ class HalFormsPropertyRemoteOptionsImpl<T = unknown> extends HalFormsPropertyCom
 class HalFormsPropertyNoOptionsImpl<T = unknown> extends HalFormsPropertyCommonOptionsImpl<T> implements HalFormsPropertyNoOptions<T> {
 
     public loadOptions(): Promise<readonly HalFormsPropertyOption[]> {
-        return Promise.resolve([]);
+        return Promise.reject(new Error("Options are not inline or remote"));
     }
 
     public isInline(): this is HalFormsPropertyInlineOptions<T> {

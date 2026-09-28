@@ -208,8 +208,8 @@ describe("property options", () => {
         expect(options.maxItems).toBe(Infinity);
         expect(property.multiValue).toBe(true);
         await expect(options.loadOptions(() => { throw new Error("Not implemented") }))
-            .resolves
-            .toEqual([]);
+            .rejects
+            .toThrow("Options are not inline or remote");
     })
 
     test("no options with maxItems 1 are single-valued", () => {

@@ -242,7 +242,7 @@ class HalFormsPropertyOptionsImpl implements HalFormsPropertyInlineOptions<HalFo
             return this.inline;
         }
 
-        return [];
+        throw new Error("Options are not inline or remote");
     }
 
     public isInline(): this is HalFormsPropertyInlineOptions<HalFormsPropertyOption> {
