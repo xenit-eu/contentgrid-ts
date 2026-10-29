@@ -146,6 +146,62 @@ test("invalidate() removes the cached token for a URI", async () => {
     expect((await cachingSupplier(OTHER_RESOURCE, supplierOpts))?.token).toEqual("token-2");
 })
 
+test("invalidate() with the rejected token keeps a token obtained in the meantime", async () => {
+    const supplier = sequentialSupplier(tokenExpiringIn("token-1", 300_000), tokenExpiringIn("token-2", 300_000), tokenExpiringIn("token-3", 300_000));
+    const cachingSupplier = createCachingTokenSupplier(supplier);
+
+    await cachingSupplier(RESOURCE, supplierOpts);
+    // Two requests with token-1 are rejected; the first invalidation leads to token-2
+    cachingSupplier.invalidate(RESOURCE, "token-1");
+    expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-2");
+    cachingSupplier.invalidate(RESOURCE, "token-1");
+
+    expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-2");
+    expect(supplier).toHaveBeenCalledTimes(2);
+})
+
+test("invalidate() with a rejected token keeps a token that is still being obtained", async () => {
+    let resolveToken!: (token: AuthenticationToken) => void;
+    const supplier = sequentialSupplier(tokenExpiringIn("token-1", 300_000));
+    supplier.mockImplementationOnce(() => new Promise(resolve => {
+        resolveToken = resolve;
+    }));
+    const cachingSupplier = createCachingTokenSupplier(supplier);
+
+    await cachingSupplier(RESOURCE, supplierOpts);
+    cachingSupplier.invalidate(RESOURCE, "token-1");
+    const pending = cachingSupplier(RESOURCE, supplierOpts);
+    await Promise.resolve();
+    cachingSupplier.invalidate(RESOURCE, "token-1");
+    resolveToken(tokenExpiringIn("token-2", 300_000));
+
+    expect((await pending)?.token).toEqual("token-2");
+    expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-2");
+    expect(supplier).toHaveBeenCalledTimes(2);
+})
+
+test("does not cache a token with an invalid expiry", async () => {
+    const supplier = sequentialSupplier(
+        { token: "token-1", expiresAt: new Date(NaN) },
+        { token: "token-2", expiresAt: new Date(NaN) }
+    );
+    const cachingSupplier = createCachingTokenSupplier(supplier);
+
+    expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-1");
+    expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-2");
+})
+
+test("invalidate() for a URI without cached token does nothing", async () => {
+    const supplier = sequentialSupplier(tokenExpiringIn("token-1", 300_000));
+    const cachingSupplier = createCachingTokenSupplier(supplier);
+
+    await cachingSupplier(RESOURCE, supplierOpts);
+    cachingSupplier.invalidate(OTHER_RESOURCE, "token-1");
+
+    expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-1");
+    expect(supplier).toHaveBeenCalledTimes(1);
+})
+
 test("clear() removes all cached tokens", async () => {
     const supplier = sequentialSupplier(tokenExpiringIn("token-1", 300_000), tokenExpiringIn("token-2", 300_000));
     const cachingSupplier = createCachingTokenSupplier(supplier);
@@ -159,10 +215,12 @@ test("clear() removes all cached tokens", async () => {
 test("does not pass the request signal to the shared call", async () => {
     const supplier = sequentialSupplier(tokenExpiringIn("token-1", 300_000));
     const cachingSupplier = createCachingTokenSupplier(supplier);
+    const requestSignal = new AbortController().signal;
 
-    await cachingSupplier(RESOURCE, { ...supplierOpts, signal: new AbortController().signal });
+    await cachingSupplier(RESOURCE, { ...supplierOpts, signal: requestSignal });
 
-    expect(supplier).toHaveBeenCalledWith(RESOURCE, { fetch: supplierOpts.fetch });
+    expect(supplier).toHaveBeenCalledWith(RESOURCE, { fetch: supplierOpts.fetch, signal: expect.any(AbortSignal) });
+    expect(supplier.mock.calls[0]![1].signal).not.toBe(requestSignal);
 })
 
 test("an aborted request stops waiting without failing other requests", async () => {
@@ -180,9 +238,57 @@ test("an aborted request stops waiting without failing other requests", async ()
     abortController.abort(new Error("aborted"));
     await expect(aborted).rejects.toThrow("aborted");
 
+    expect(supplier.mock.calls[0]![1].signal?.aborted).toBe(false);
+
     resolveToken(tokenExpiringIn("token-1", 300_000));
     expect((await other)?.token).toEqual("token-1");
     expect(supplier).toHaveBeenCalledTimes(1);
+})
+
+test("aborts and forgets the shared call once every waiting request is aborted", async () => {
+    const supplier = jest.fn<Promise<AuthenticationToken | null>, Parameters<AuthenticationTokenSupplier>>()
+        .mockImplementationOnce(() => new Promise(() => {})) // Never completes
+        .mockResolvedValueOnce(tokenExpiringIn("token-2", 300_000));
+    const cachingSupplier = createCachingTokenSupplier(supplier);
+    const first = new AbortController();
+    const second = new AbortController();
+
+    const requests = [
+        cachingSupplier(RESOURCE, { ...supplierOpts, signal: first.signal }),
+        cachingSupplier(RESOURCE, { ...supplierOpts, signal: second.signal }),
+    ];
+    await Promise.resolve(); // Let both requests resolve their scope
+    const sharedSignal = supplier.mock.calls[0]![1].signal!;
+
+    first.abort(new Error("first aborted"));
+    await expect(requests[0]).rejects.toThrow("first aborted");
+    expect(sharedSignal.aborted).toBe(false);
+
+    second.abort(new Error("second aborted"));
+    await expect(requests[1]).rejects.toThrow("second aborted");
+    expect(sharedSignal.aborted).toBe(true);
+
+    expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-2");
+    expect(supplier).toHaveBeenCalledTimes(2);
+})
+
+test("keeps the shared call while a request without signal is waiting for it", async () => {
+    let resolveToken!: (token: AuthenticationToken) => void;
+    const supplier = jest.fn<Promise<AuthenticationToken | null>, Parameters<AuthenticationTokenSupplier>>(() => new Promise(resolve => {
+        resolveToken = resolve;
+    }));
+    const cachingSupplier = createCachingTokenSupplier(supplier);
+    const abortController = new AbortController();
+
+    const aborted = cachingSupplier(RESOURCE, { ...supplierOpts, signal: abortController.signal });
+    const withoutSignal = cachingSupplier(RESOURCE, supplierOpts);
+    await Promise.resolve();
+    abortController.abort(new Error("aborted"));
+    await expect(aborted).rejects.toThrow("aborted");
+
+    expect(supplier.mock.calls[0]![1].signal?.aborted).toBe(false);
+    resolveToken(tokenExpiringIn("token-1", 300_000));
+    expect((await withoutSignal)?.token).toEqual("token-1");
 })
 
 test("rejects immediately when the request is already aborted", async () => {
@@ -192,6 +298,7 @@ test("rejects immediately when the request is already aborted", async () => {
     abortController.abort(new Error("already aborted"));
 
     await expect(cachingSupplier(RESOURCE, { ...supplierOpts, signal: abortController.signal })).rejects.toThrow("already aborted");
+    expect(supplier).not.toHaveBeenCalled();
 })
 
 test("propagates a failure to a request with a signal", async () => {
@@ -273,6 +380,7 @@ describe("browsers without AbortSignal#reason and AbortSignal#throwIfAborted", (
         const cachingSupplier = createCachingTokenSupplier(supplier);
 
         await expect(cachingSupplier(RESOURCE, { ...supplierOpts, signal: legacyAbortSignal(true) })).rejects.toMatchObject({ name: "AbortError" });
+        expect(supplier).not.toHaveBeenCalled();
     })
 
     test("rejects with an AbortError when aborted while waiting", async () => {

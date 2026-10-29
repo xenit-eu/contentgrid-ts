@@ -16,8 +16,10 @@ const extensionTokenSupplier = createCachingTokenSupplier(
         exchangeUrl: applicationOrigin + "/.contentgrid/authentication/external/token",
     }),
     {
-        // Never hand out a token that was obtained for a different user
+        // Never hand out a token that was obtained for a different user.
+        // Resolved on every request, so keep it cheap.
         scope: () => currentUser?.sub ?? null,
+        // No `key`: a token is only reused for the exact URI it was obtained for (see below)
     }
 );
 
@@ -42,4 +44,23 @@ Tokens that can no longer be handed out (expired, or cached for another scope) a
 | `scope`        | one shared scope       | The scope tokens belong to (e.g. the signed-in user). A `null` scope removes all cached tokens and returns `null` without obtaining a token |
 | `expiryMargin` | `30_000`               | Milliseconds before expiry at which a cached token is no longer handed out                          |
 
-Call `invalidate(uri)` to drop the token for a URI after it was rejected (e.g. on `401 Unauthorized`), or `clear()` to drop all cached tokens (e.g. on sign-out).
+#### Choosing a `key`
+
+The default key is the full request URI. For the ContentGrid token exchange this is the safe default:
+the decision to issue a token may depend on the exact resource (its path and query), so a token is only reused for the resource it was obtained for.
+The downside is that every distinct URI (other query parameters, pagination cursors, ...) needs its own token exchange.
+
+When an extension accepts one token for all its resources, share a token per origin instead:
+
+```typescript
+createCachingTokenSupplier(tokenExchangeSupplier, { key: uri => new URL(uri).origin });
+```
+
+#### `scope` is resolved on every request
+
+The `scope` is resolved for every request, including requests served from the cache, so it should be cheap (e.g. read the current user from memory, not over the network).
+When it rejects, the request fails.
+
+#### Invalidating tokens
+
+Call `invalidate(uri, token)` to drop the token for a URI after it was rejected (e.g. on `401 Unauthorized`). Passing the rejected `token` makes sure a token that was obtained in the meantime (e.g. after a concurrent request was rejected too) is kept. Call `clear()` to drop all cached tokens (e.g. on sign-out).
