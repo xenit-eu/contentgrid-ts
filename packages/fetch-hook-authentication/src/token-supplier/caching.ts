@@ -13,7 +13,7 @@ export interface CachingTokenSupplierOptions {
      * The scope the cached tokens belong to (e.g. the identity of the signed-in user).
      *
      * A token cached for one scope is never handed out for another scope.
-     * When the scope resolves to `null`, no token is obtained and `null` is returned.
+     * When the scope resolves to `null` (e.g. nobody is signed in), all cached tokens are removed, no token is obtained and `null` is returned.
      *
      * Defaults to a single, shared scope.
      */
@@ -53,13 +53,25 @@ interface CacheEntry {
 const DEFAULT_EXPIRY_MARGIN = 30_000;
 const DEFAULT_SCOPE = "";
 
+/**
+ * The reason a signal was aborted with.
+ *
+ * Browsers without `AbortSignal#reason` (e.g. Safari < 15.4) get a generic `AbortError` instead.
+ */
+function abortReason(signal: AbortSignal): unknown {
+    return signal.reason ?? new DOMException("The operation was aborted.", "AbortError");
+}
+
 function raceAbort<T>(promise: Promise<T>, signal: AbortSignal | undefined): Promise<T> {
     if(!signal) {
         return promise;
     }
-    signal.throwIfAborted();
+    // Not AbortSignal#throwIfAborted(), which is not available in all supported browsers
+    if(signal.aborted) {
+        return Promise.reject(abortReason(signal));
+    }
     return new Promise<T>((resolve, reject) => {
-        const onAbort = () => reject(signal.reason);
+        const onAbort = () => reject(abortReason(signal));
         signal.addEventListener("abort", onAbort, { once: true });
         promise.then(
             value => {
@@ -80,6 +92,7 @@ function raceAbort<T>(promise: Promise<T>, signal: AbortSignal | undefined): Pro
  * - A cached token is reused for requests with the same {@link CachingTokenSupplierOptions#key} and {@link CachingTokenSupplierOptions#scope},
  *   until it is within {@link CachingTokenSupplierOptions#expiryMargin} of its expiry; the next request then obtains a new token.
  * - Tokens without an expiry and failures are not cached.
+ * - Tokens that can no longer be handed out (expired, or cached for another scope) are removed on the next request.
  * - Concurrent requests for the same key share a single call to the wrapped token supplier.
  *   That call is not aborted when one of the requests is aborted; an aborted request only stops waiting for it.
  *
@@ -102,15 +115,25 @@ export default function createCachingTokenSupplier(supplier: AuthenticationToken
         return entry.expiresAt !== null && entry.expiresAt.getTime() - expiryMargin > Date.now();
     }
 
+    function removeUnusable(scope: string | null) {
+        for(const [cacheKey, entry] of entries) {
+            if(scope === null || !isUsable(entry, scope)) {
+                entries.delete(cacheKey);
+            }
+        }
+    }
+
     const cachingSupplier: AuthenticationTokenSupplier = async (uri, opts) => {
         const scope = await scopeResolver.resolve();
+        // Keep the cache from growing with tokens that will never be handed out again
+        removeUnusable(scope);
         if(scope === null) {
             return null;
         }
 
         const cacheKey = key(uri);
         let entry = entries.get(cacheKey);
-        if(!entry || !isUsable(entry, scope)) {
+        if(!entry) {
             const created: CacheEntry = {
                 scope,
                 token: supplier(uri, { fetch: opts.fetch }),
@@ -121,6 +144,9 @@ export default function createCachingTokenSupplier(supplier: AuthenticationToken
                 token => {
                     created.settled = true;
                     created.expiresAt = token?.expiresAt ?? null;
+                    if(created.expiresAt === null && entries.get(cacheKey) === created) {
+                        entries.delete(cacheKey); // Not cacheable
+                    }
                 },
                 () => {
                     if(entries.get(cacheKey) === created) {

@@ -201,3 +201,90 @@ test("propagates a failure to a request with a signal", async () => {
 
     await expect(cachingSupplier(RESOURCE, { ...supplierOpts, signal: new AbortController().signal })).rejects.toThrow("exchange failed");
 })
+
+describe("removing tokens that can no longer be handed out", () => {
+    let mapDelete: jest.SpyInstance;
+
+    beforeEach(() => {
+        mapDelete = jest.spyOn(Map.prototype, "delete");
+    });
+
+    afterEach(() => {
+        mapDelete.mockRestore();
+    });
+
+    test("removes expired tokens for other keys on the next request", async () => {
+        const supplier = sequentialSupplier(tokenExpiringIn("token-1", 60_000), tokenExpiringIn("token-2", 300_000));
+        const cachingSupplier = createCachingTokenSupplier(supplier);
+
+        await cachingSupplier(RESOURCE, supplierOpts);
+        jest.advanceTimersByTime(60_000);
+        await cachingSupplier(OTHER_RESOURCE, supplierOpts);
+
+        expect(mapDelete).toHaveBeenCalledWith(RESOURCE);
+        expect(mapDelete).not.toHaveBeenCalledWith(OTHER_RESOURCE);
+    })
+
+    test("removes tokens cached for another scope on the next request", async () => {
+        let user = "user-1";
+        const supplier = sequentialSupplier(tokenExpiringIn("token-1", 300_000), tokenExpiringIn("token-2", 300_000));
+        const cachingSupplier = createCachingTokenSupplier(supplier, { scope: () => user });
+
+        await cachingSupplier(RESOURCE, supplierOpts);
+        user = "user-2";
+        await cachingSupplier(OTHER_RESOURCE, supplierOpts);
+
+        expect(mapDelete).toHaveBeenCalledWith(RESOURCE);
+    })
+
+    test("removes all tokens when the scope becomes null", async () => {
+        let user: string | null = "user-1";
+        const supplier = sequentialSupplier(tokenExpiringIn("token-1", 300_000), tokenExpiringIn("token-2", 300_000));
+        const cachingSupplier = createCachingTokenSupplier(supplier, { scope: () => user });
+
+        await cachingSupplier(RESOURCE, supplierOpts);
+        await cachingSupplier(OTHER_RESOURCE, supplierOpts);
+        user = null;
+        expect(await cachingSupplier(RESOURCE, supplierOpts)).toBeNull();
+
+        expect(mapDelete).toHaveBeenCalledWith(RESOURCE);
+        expect(mapDelete).toHaveBeenCalledWith(OTHER_RESOURCE);
+    })
+
+    test("does not keep a token without expiry", async () => {
+        const supplier = sequentialSupplier(tokenExpiringIn("token-1", null));
+        const cachingSupplier = createCachingTokenSupplier(supplier);
+
+        await cachingSupplier(RESOURCE, supplierOpts);
+
+        expect(mapDelete).toHaveBeenCalledWith(RESOURCE);
+    })
+})
+
+describe("browsers without AbortSignal#reason and AbortSignal#throwIfAborted", () => {
+    function legacyAbortSignal(aborted: boolean) {
+        const target = new EventTarget() as EventTarget & { aborted: boolean };
+        target.aborted = aborted;
+        return target as unknown as AbortSignal;
+    }
+
+    test("rejects with an AbortError when already aborted", async () => {
+        const supplier = sequentialSupplier(tokenExpiringIn("token-1", 300_000));
+        const cachingSupplier = createCachingTokenSupplier(supplier);
+
+        await expect(cachingSupplier(RESOURCE, { ...supplierOpts, signal: legacyAbortSignal(true) })).rejects.toMatchObject({ name: "AbortError" });
+    })
+
+    test("rejects with an AbortError when aborted while waiting", async () => {
+        const supplier = jest.fn<Promise<AuthenticationToken | null>, Parameters<AuthenticationTokenSupplier>>(() => new Promise(() => {}));
+        const cachingSupplier = createCachingTokenSupplier(supplier);
+        const signal = legacyAbortSignal(false);
+
+        const request = cachingSupplier(RESOURCE, { ...supplierOpts, signal });
+        await Promise.resolve(); // Let the request resolve its scope
+        (signal as unknown as { aborted: boolean }).aborted = true;
+        signal.dispatchEvent(new Event("abort"));
+
+        await expect(request).rejects.toMatchObject({ name: "AbortError" });
+    })
+})
