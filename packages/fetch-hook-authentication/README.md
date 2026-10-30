@@ -36,7 +36,8 @@ const authenticationHook = createBearerAuthenticationHook({
 `createCachingTokenSupplier(supplier, options)` keeps the tokens supplied by another token supplier in memory.
 A cached token is handed out until it is close to its expiry (`expiryMargin`, 30 seconds by default); the next request then obtains a new token.
 Tokens without an expiry and failures are never cached, and concurrent requests for the same token share a single call to the wrapped supplier.
-Tokens that can no longer be handed out (expired, or cached for another scope) are removed on the next request, so the cache does not grow over a long session.
+A timer removes each cached token from memory once it can no longer be handed out, so the cache does not grow over a long session. In Node.js these timers don't keep the process alive.
+Browsers can delay timers (e.g. in background tabs), so the expiry is also checked whenever a cached token is requested; an expired token is never handed out.
 
 | Option         | Default                | Description                                                                                       |
 |----------------|------------------------|---------------------------------------------------------------------------------------------------|

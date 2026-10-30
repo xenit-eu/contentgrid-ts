@@ -320,31 +320,36 @@ describe("removing tokens that can no longer be handed out", () => {
         mapDelete.mockRestore();
     });
 
-    test("removes expired tokens for other keys on the next request", async () => {
-        const supplier = sequentialSupplier(tokenExpiringIn("token-1", 60_000), tokenExpiringIn("token-2", 300_000));
+    test("removes a token when it is about to expire, without another request", async () => {
+        const supplier = sequentialSupplier(tokenExpiringIn("token-1", 60_000));
         const cachingSupplier = createCachingTokenSupplier(supplier);
 
         await cachingSupplier(RESOURCE, supplierOpts);
-        jest.advanceTimersByTime(60_000);
-        await cachingSupplier(OTHER_RESOURCE, supplierOpts);
+        expect(jest.getTimerCount()).toBe(1);
 
+        jest.advanceTimersByTime(60_000 - 30_000 - 1);
+        expect(mapDelete).not.toHaveBeenCalledWith(RESOURCE);
+
+        jest.advanceTimersByTime(1);
         expect(mapDelete).toHaveBeenCalledWith(RESOURCE);
-        expect(mapDelete).not.toHaveBeenCalledWith(OTHER_RESOURCE);
+        expect(jest.getTimerCount()).toBe(0);
     })
 
-    test("removes tokens cached for another scope on the next request", async () => {
+    test("removes a token cached for another scope when its timer fires", async () => {
         let user = "user-1";
-        const supplier = sequentialSupplier(tokenExpiringIn("token-1", 300_000), tokenExpiringIn("token-2", 300_000));
+        const supplier = sequentialSupplier(tokenExpiringIn("token-1", 60_000), tokenExpiringIn("token-2", 300_000));
         const cachingSupplier = createCachingTokenSupplier(supplier, { scope: () => user });
 
         await cachingSupplier(RESOURCE, supplierOpts);
         user = "user-2";
         await cachingSupplier(OTHER_RESOURCE, supplierOpts);
+        jest.advanceTimersByTime(30_000);
 
         expect(mapDelete).toHaveBeenCalledWith(RESOURCE);
+        expect(mapDelete).not.toHaveBeenCalledWith(OTHER_RESOURCE);
     })
 
-    test("removes all tokens when the scope becomes null", async () => {
+    test("removes all tokens and their timers when the scope becomes null", async () => {
         let user: string | null = "user-1";
         const supplier = sequentialSupplier(tokenExpiringIn("token-1", 300_000), tokenExpiringIn("token-2", 300_000));
         const cachingSupplier = createCachingTokenSupplier(supplier, { scope: () => user });
@@ -356,6 +361,7 @@ describe("removing tokens that can no longer be handed out", () => {
 
         expect(mapDelete).toHaveBeenCalledWith(RESOURCE);
         expect(mapDelete).toHaveBeenCalledWith(OTHER_RESOURCE);
+        expect(jest.getTimerCount()).toBe(0);
     })
 
     test("does not keep a token without expiry", async () => {
@@ -365,6 +371,86 @@ describe("removing tokens that can no longer be handed out", () => {
         await cachingSupplier(RESOURCE, supplierOpts);
 
         expect(mapDelete).toHaveBeenCalledWith(RESOURCE);
+        expect(jest.getTimerCount()).toBe(0);
+    })
+
+    test("does not keep a token that is already within the expiry margin", async () => {
+        const supplier = sequentialSupplier(tokenExpiringIn("token-1", 10_000), tokenExpiringIn("token-2", 10_000));
+        const cachingSupplier = createCachingTokenSupplier(supplier);
+
+        expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-1");
+
+        expect(mapDelete).toHaveBeenCalledWith(RESOURCE);
+        expect(jest.getTimerCount()).toBe(0);
+        expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-2");
+    })
+})
+
+describe("expiry timers", () => {
+    test("invalidate() and clear() stop the timers of the removed tokens", async () => {
+        const supplier = sequentialSupplier(tokenExpiringIn("token-1", 300_000), tokenExpiringIn("token-2", 300_000));
+        const cachingSupplier = createCachingTokenSupplier(supplier);
+
+        await cachingSupplier(RESOURCE, supplierOpts);
+        await cachingSupplier(OTHER_RESOURCE, supplierOpts);
+        expect(jest.getTimerCount()).toBe(2);
+
+        cachingSupplier.invalidate(RESOURCE);
+        expect(jest.getTimerCount()).toBe(1);
+
+        cachingSupplier.clear();
+        expect(jest.getTimerCount()).toBe(0);
+    })
+
+    test("replacing a token for another scope stops the timer of the old token", async () => {
+        let user = "user-1";
+        const supplier = sequentialSupplier(tokenExpiringIn("token-1", 300_000), tokenExpiringIn("token-2", 300_000));
+        const cachingSupplier = createCachingTokenSupplier(supplier, { scope: () => user });
+
+        await cachingSupplier(RESOURCE, supplierOpts);
+        user = "user-2";
+        expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-2");
+
+        expect(jest.getTimerCount()).toBe(1);
+    })
+
+    test("does not hand out an expired token when its timer was delayed", async () => {
+        const supplier = sequentialSupplier(tokenExpiringIn("token-1", 60_000), tokenExpiringIn("token-2", 60_000));
+        const cachingSupplier = createCachingTokenSupplier(supplier);
+
+        await cachingSupplier(RESOURCE, supplierOpts);
+        // Time passes without the timer firing, like in a throttled background tab
+        jest.setSystemTime(Date.now() + 60_000);
+
+        expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-2");
+    })
+
+    test("keeps a token that expires later than the longest timer delay", async () => {
+        const maxTimeout = 2 ** 31 - 1;
+        const supplier = sequentialSupplier(tokenExpiringIn("token-1", maxTimeout + 60_000), tokenExpiringIn("token-2", 300_000));
+        const cachingSupplier = createCachingTokenSupplier(supplier);
+
+        await cachingSupplier(RESOURCE, supplierOpts);
+        jest.advanceTimersByTime(maxTimeout);
+        expect(jest.getTimerCount()).toBe(1);
+        expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-1");
+
+        jest.advanceTimersByTime(30_000);
+        expect(jest.getTimerCount()).toBe(0);
+        expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-2");
+    })
+
+    test("does not keep a Node.js process alive", async () => {
+        jest.useRealTimers();
+        const unref = jest.spyOn(setTimeout(() => {}, 0).constructor.prototype, "unref");
+        const supplier = sequentialSupplier(tokenExpiringIn("token-1", 300_000));
+        const cachingSupplier = createCachingTokenSupplier(supplier);
+
+        await cachingSupplier(RESOURCE, supplierOpts);
+
+        expect(unref).toHaveBeenCalledTimes(1);
+        cachingSupplier.clear();
+        unref.mockRestore();
     })
 })
 

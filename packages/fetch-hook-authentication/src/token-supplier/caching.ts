@@ -68,10 +68,18 @@ interface CacheEntry {
     waiters: number;
     settled: boolean;
     value: AuthenticationToken | null;
+    /**
+     * Removes the entry once its token can no longer be handed out
+     */
+    timer?: ReturnType<typeof setTimeout>;
 }
 
 const DEFAULT_EXPIRY_MARGIN = 30_000;
 const DEFAULT_SCOPE = "";
+/**
+ * Longest delay `setTimeout` supports; a longer delay fires immediately
+ */
+const MAX_TIMEOUT = 2 ** 31 - 1;
 
 /**
  * The reason a signal was aborted with.
@@ -97,7 +105,9 @@ function expiryOf(token: AuthenticationToken | null): Date | null {
  *   until it is within {@link CachingTokenSupplierOptions#expiryMargin} of its expiry; the next request then obtains a new token.
  *   A token that is valid for less than `expiryMargin` is therefore handed out once, but never reused.
  * - Tokens without (valid) expiry and failures are not cached.
- * - Tokens that can no longer be handed out (expired, or cached for another scope) are removed on the next request.
+ * - A cached token is removed from memory by a timer once it can no longer be handed out, so the cache does not grow over a long session.
+ *   Timers are not exact (e.g. browsers delay them in background tabs), so the expiry is checked again whenever a cached token is requested.
+ * - A token cached for another scope is never handed out; it is replaced when its key is requested, or removed by its timer.
  * - Concurrent requests for the same key share a single call to the wrapped token supplier.
  *   An aborted request only stops waiting for that call; the call itself is aborted (and not cached) once every request waiting for it is aborted.
  *
@@ -110,6 +120,14 @@ export default function createCachingTokenSupplier(supplier: AuthenticationToken
     const expiryMargin = options.expiryMargin ?? DEFAULT_EXPIRY_MARGIN;
     const entries = new Map<string, CacheEntry>();
 
+    /**
+     * Milliseconds until a settled entry's token can no longer be handed out, or `null` when it has no (valid) expiry
+     */
+    function remainingTime(entry: CacheEntry): number | null {
+        const expiresAt = expiryOf(entry.value);
+        return expiresAt === null ? null : expiresAt.getTime() - expiryMargin - Date.now();
+    }
+
     function isUsable(entry: CacheEntry, scope: string): boolean {
         if(entry.scope !== scope) {
             return false;
@@ -117,21 +135,35 @@ export default function createCachingTokenSupplier(supplier: AuthenticationToken
         if(!entry.settled) {
             return true; // Still in flight, share it
         }
-        const expiresAt = expiryOf(entry.value);
-        return expiresAt !== null && expiresAt.getTime() - expiryMargin > Date.now();
-    }
-
-    function removeUnusable(scope: string | null) {
-        for(const [cacheKey, entry] of entries) {
-            if(scope === null || !isUsable(entry, scope)) {
-                entries.delete(cacheKey);
-            }
-        }
+        const remaining = remainingTime(entry);
+        return remaining !== null && remaining > 0;
     }
 
     function remove(cacheKey: string, entry: CacheEntry) {
+        clearTimeout(entry.timer);
         if(entries.get(cacheKey) === entry) {
             entries.delete(cacheKey);
+        }
+    }
+
+    function scheduleRemoval(cacheKey: string, entry: CacheEntry) {
+        const remaining = remainingTime(entry);
+        if(remaining === null || remaining <= 0) {
+            remove(cacheKey, entry); // Not cacheable, or already too close to its expiry
+            return;
+        }
+        // A delay that does not fit in a timer is split up: the timer is scheduled again when it fires too early
+        entry.timer = setTimeout(() => scheduleRemoval(cacheKey, entry), Math.min(remaining, MAX_TIMEOUT));
+        // Don't keep a Node.js process alive just to clean up the cache
+        const timer: { unref?: () => void } | number = entry.timer;
+        if(typeof timer === "object") {
+            timer.unref?.();
+        }
+    }
+
+    function removeAll() {
+        for(const [cacheKey, entry] of entries) {
+            remove(cacheKey, entry);
         }
     }
 
@@ -149,8 +181,8 @@ export default function createCachingTokenSupplier(supplier: AuthenticationToken
             token => {
                 entry.settled = true;
                 entry.value = token;
-                if(expiryOf(token) === null) {
-                    remove(cacheKey, entry); // Not cacheable
+                if(entries.get(cacheKey) === entry) {
+                    scheduleRemoval(cacheKey, entry);
                 }
             },
             () => remove(cacheKey, entry)
@@ -196,9 +228,8 @@ export default function createCachingTokenSupplier(supplier: AuthenticationToken
 
     const cachingSupplier: AuthenticationTokenSupplier = async (uri, opts) => {
         const scope = await scopeResolver.resolve();
-        // Keep the cache from growing with tokens that will never be handed out again
-        removeUnusable(scope);
         if(scope === null) {
+            removeAll();
             return null;
         }
         // Not AbortSignal#throwIfAborted(), which is not available in all supported browsers
@@ -207,7 +238,12 @@ export default function createCachingTokenSupplier(supplier: AuthenticationToken
         }
 
         const cacheKey = key(uri);
-        const entry = entries.get(cacheKey) ?? createEntry(cacheKey, uri, scope, opts.fetch);
+        let entry = entries.get(cacheKey);
+        if(entry !== undefined && !isUsable(entry, scope)) {
+            remove(cacheKey, entry);
+            entry = undefined;
+        }
+        entry ??= createEntry(cacheKey, uri, scope, opts.fetch);
         return waitFor(cacheKey, entry, opts.signal);
     };
 
@@ -220,11 +256,11 @@ export default function createCachingTokenSupplier(supplier: AuthenticationToken
             }
             // An entry that is still in flight was created after the rejected token was handed out
             if(token === undefined || (entry.settled && entry.value?.token === token)) {
-                entries.delete(cacheKey);
+                remove(cacheKey, entry);
             }
         },
         clear() {
-            entries.clear();
+            removeAll();
         },
     });
 }
