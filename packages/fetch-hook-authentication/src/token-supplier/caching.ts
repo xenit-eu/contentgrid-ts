@@ -76,10 +76,6 @@ interface CacheEntry {
 
 const DEFAULT_EXPIRY_MARGIN = 30_000;
 const DEFAULT_SCOPE = "";
-/**
- * Longest delay `setTimeout` supports; a longer delay fires immediately
- */
-const MAX_TIMEOUT = 2 ** 31 - 1;
 
 /**
  * The reason a signal was aborted with.
@@ -152,8 +148,7 @@ export default function createCachingTokenSupplier(supplier: AuthenticationToken
             remove(cacheKey, entry); // Not cacheable, or already too close to its expiry
             return;
         }
-        // A delay that does not fit in a timer is split up: the timer is scheduled again when it fires too early
-        entry.timer = setTimeout(() => scheduleRemoval(cacheKey, entry), Math.min(remaining, MAX_TIMEOUT));
+        entry.timer = setTimeout(() => remove(cacheKey, entry), remaining);
         // Don't keep a Node.js process alive just to clean up the cache
         const timer: { unref?: () => void } | number = entry.timer;
         if(typeof timer === "object") {

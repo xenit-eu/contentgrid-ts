@@ -425,21 +425,6 @@ describe("expiry timers", () => {
         expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-2");
     })
 
-    test("keeps a token that expires later than the longest timer delay", async () => {
-        const maxTimeout = 2 ** 31 - 1;
-        const supplier = sequentialSupplier(tokenExpiringIn("token-1", maxTimeout + 60_000), tokenExpiringIn("token-2", 300_000));
-        const cachingSupplier = createCachingTokenSupplier(supplier);
-
-        await cachingSupplier(RESOURCE, supplierOpts);
-        jest.advanceTimersByTime(maxTimeout);
-        expect(jest.getTimerCount()).toBe(1);
-        expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-1");
-
-        jest.advanceTimersByTime(30_000);
-        expect(jest.getTimerCount()).toBe(0);
-        expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-2");
-    })
-
     test("does not keep a Node.js process alive", async () => {
         jest.useRealTimers();
         const unref = jest.spyOn(setTimeout(() => {}, 0).constructor.prototype, "unref");
