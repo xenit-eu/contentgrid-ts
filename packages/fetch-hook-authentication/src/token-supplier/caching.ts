@@ -143,7 +143,8 @@ export default function createCachingTokenSupplier(supplier: AuthenticationToken
         }
         entry.timer = setTimeout(() => remove(cacheKey, entry), remaining);
         // Don't keep a Node.js process alive just to clean up the cache
-        const timer: { unref?: () => void } | number = entry.timer;
+        // A number in browsers; asserted (not annotated), so TypeScript does not narrow it to the type of the current environment
+        const timer = entry.timer as { unref?: () => void } | number;
         if(typeof timer === "object") {
             timer.unref?.();
         }
