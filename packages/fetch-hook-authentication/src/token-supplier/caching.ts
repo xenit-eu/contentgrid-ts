@@ -46,7 +46,7 @@ export type CachingTokenSupplier = AuthenticationTokenSupplier & {
      *
      * @param uri - The URI the token was used for
      * @param token - The rejected token. When given, the cached token is only removed if it is still this token,
-     *   so a token that was obtained in the meantime (e.g. by a concurrent request that was also rejected) is kept.
+     *   so a token that was obtained in the meantime (e.g. by a concurrent request) is kept.
      */
     invalidate(uri: string, token?: string): void;
     /**
