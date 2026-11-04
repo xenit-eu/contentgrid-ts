@@ -212,15 +212,13 @@ test("clear() removes all cached tokens", async () => {
     expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-2");
 })
 
-test("does not pass the request signal to the shared call", async () => {
+test("does not pass a request signal to the shared call", async () => {
     const supplier = sequentialSupplier(tokenExpiringIn("token-1", 300_000));
     const cachingSupplier = createCachingTokenSupplier(supplier);
-    const requestSignal = new AbortController().signal;
 
-    await cachingSupplier(RESOURCE, { ...supplierOpts, signal: requestSignal });
+    await cachingSupplier(RESOURCE, { ...supplierOpts, signal: new AbortController().signal });
 
-    expect(supplier).toHaveBeenCalledWith(RESOURCE, { fetch: supplierOpts.fetch, signal: expect.any(AbortSignal) });
-    expect(supplier.mock.calls[0]![1].signal).not.toBe(requestSignal);
+    expect(supplier).toHaveBeenCalledWith(RESOURCE, { fetch: supplierOpts.fetch });
 })
 
 test("an aborted request stops waiting without failing other requests", async () => {
@@ -238,57 +236,39 @@ test("an aborted request stops waiting without failing other requests", async ()
     abortController.abort(new Error("aborted"));
     await expect(aborted).rejects.toThrow("aborted");
 
-    expect(supplier.mock.calls[0]![1].signal?.aborted).toBe(false);
-
     resolveToken(tokenExpiringIn("token-1", 300_000));
     expect((await other)?.token).toEqual("token-1");
     expect(supplier).toHaveBeenCalledTimes(1);
 })
 
-test("aborts and forgets the shared call once every waiting request is aborted", async () => {
+test("a new request does not wait for a call that an aborted request was waiting for", async () => {
     const supplier = jest.fn<Promise<AuthenticationToken | null>, Parameters<AuthenticationTokenSupplier>>()
         .mockImplementationOnce(() => new Promise(() => {})) // Never completes
         .mockResolvedValueOnce(tokenExpiringIn("token-2", 300_000));
     const cachingSupplier = createCachingTokenSupplier(supplier);
-    const first = new AbortController();
-    const second = new AbortController();
+    const abortController = new AbortController();
 
-    const requests = [
-        cachingSupplier(RESOURCE, { ...supplierOpts, signal: first.signal }),
-        cachingSupplier(RESOURCE, { ...supplierOpts, signal: second.signal }),
-    ];
-    await Promise.resolve(); // Let both requests resolve their scope
-    const sharedSignal = supplier.mock.calls[0]![1].signal!;
-
-    first.abort(new Error("first aborted"));
-    await expect(requests[0]).rejects.toThrow("first aborted");
-    expect(sharedSignal.aborted).toBe(false);
-
-    second.abort(new Error("second aborted"));
-    await expect(requests[1]).rejects.toThrow("second aborted");
-    expect(sharedSignal.aborted).toBe(true);
+    const aborted = cachingSupplier(RESOURCE, { ...supplierOpts, signal: abortController.signal });
+    await Promise.resolve(); // Let the request resolve its scope
+    abortController.abort(new Error("aborted"));
+    await expect(aborted).rejects.toThrow("aborted");
 
     expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-2");
     expect(supplier).toHaveBeenCalledTimes(2);
 })
 
-test("keeps the shared call while a request without signal is waiting for it", async () => {
-    let resolveToken!: (token: AuthenticationToken) => void;
-    const supplier = jest.fn<Promise<AuthenticationToken | null>, Parameters<AuthenticationTokenSupplier>>(() => new Promise(resolve => {
-        resolveToken = resolve;
-    }));
+test("an aborted request does not remove a token that is already cached", async () => {
+    const supplier = sequentialSupplier(tokenExpiringIn("token-1", 300_000), tokenExpiringIn("token-2", 300_000));
     const cachingSupplier = createCachingTokenSupplier(supplier);
+    await cachingSupplier(RESOURCE, supplierOpts);
     const abortController = new AbortController();
 
-    const aborted = cachingSupplier(RESOURCE, { ...supplierOpts, signal: abortController.signal });
-    const withoutSignal = cachingSupplier(RESOURCE, supplierOpts);
-    await Promise.resolve();
+    const request = cachingSupplier(RESOURCE, { ...supplierOpts, signal: abortController.signal });
     abortController.abort(new Error("aborted"));
-    await expect(aborted).rejects.toThrow("aborted");
+    await request.catch(() => undefined); // Served from the cache or aborted, either is fine
 
-    expect(supplier.mock.calls[0]![1].signal?.aborted).toBe(false);
-    resolveToken(tokenExpiringIn("token-1", 300_000));
-    expect((await withoutSignal)?.token).toEqual("token-1");
+    expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-1");
+    expect(supplier).toHaveBeenCalledTimes(1);
 })
 
 test("rejects immediately when the request is already aborted", async () => {

@@ -58,14 +58,6 @@ export type CachingTokenSupplier = AuthenticationTokenSupplier & {
 interface CacheEntry {
     readonly scope: string;
     readonly token: Promise<AuthenticationToken | null>;
-    /**
-     * Aborts the call to the wrapped token supplier, once no request is waiting for it anymore
-     */
-    readonly controller: AbortController;
-    /**
-     * Number of requests waiting for {@link token}
-     */
-    waiters: number;
     settled: boolean;
     value: AuthenticationToken | null;
     /**
@@ -105,7 +97,8 @@ function expiryOf(token: AuthenticationToken | null): Date | null {
  *   Timers are not exact (e.g. browsers delay them in background tabs), so the expiry is checked again whenever a cached token is requested.
  * - A token cached for another scope is never handed out; it is replaced when its key is requested, or removed by its timer.
  * - Concurrent requests for the same key share a single call to the wrapped token supplier.
- *   An aborted request only stops waiting for that call; the call itself is aborted (and not cached) once every request waiting for it is aborted.
+ *   That call is not aborted when a request is aborted: the aborted request only stops waiting for it.
+ *   The call is then no longer shared with new requests, so a call that never completes does not block its key.
  *
  * @param supplier - The token supplier to obtain tokens from
  * @param options - Caching options
@@ -163,12 +156,10 @@ export default function createCachingTokenSupplier(supplier: AuthenticationToken
     }
 
     function createEntry(cacheKey: string, uri: string, scope: string, fetch: typeof globalThis.fetch): CacheEntry {
-        const controller = new AbortController();
         const entry: CacheEntry = {
             scope,
-            token: supplier(uri, { fetch, signal: controller.signal }),
-            controller,
-            waiters: 0,
+            // Shared between requests, so it doesn't get the signal of a single request
+            token: supplier(uri, { fetch }),
             settled: false,
             value: null,
         };
@@ -187,37 +178,21 @@ export default function createCachingTokenSupplier(supplier: AuthenticationToken
     }
 
     function waitFor(cacheKey: string, entry: CacheEntry, signal: AbortSignal | undefined): Promise<AuthenticationToken | null> {
-        entry.waiters++;
-        let waiting = true;
-        const stopWaiting = () => {
-            if(waiting) {
-                waiting = false;
-                entry.waiters--;
-                signal?.removeEventListener("abort", onAbort);
-            }
-        };
-        let onAbort: () => void;
+        if(!signal) {
+            return entry.token;
+        }
         return new Promise((resolve, reject) => {
-            onAbort = () => {
-                stopWaiting();
-                if(entry.waiters === 0 && !entry.settled) {
-                    // Nobody is waiting for this call anymore; don't let a call that never completes block this key
+            const onAbort = () => {
+                if(!entry.settled) {
+                    // Don't share a call that may never complete with new requests; they start a new call instead
                     remove(cacheKey, entry);
-                    entry.controller.abort();
                 }
-                reject(abortReason(signal!));
+                reject(abortReason(signal));
             };
-            signal?.addEventListener("abort", onAbort, { once: true });
-            entry.token.then(
-                value => {
-                    stopWaiting();
-                    resolve(value);
-                },
-                error => {
-                    stopWaiting();
-                    reject(error);
-                }
-            );
+            signal.addEventListener("abort", onAbort, { once: true });
+            entry.token
+                .then(resolve, reject)
+                .finally(() => signal.removeEventListener("abort", onAbort));
         });
     }
 
