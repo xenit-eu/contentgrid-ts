@@ -10,8 +10,11 @@ export interface CachingTokenSupplierOptions {
      * Every distinct URI (e.g. with different query parameters) then needs its own token.
      *
      * To reuse a token for all URIs on the same origin, use `uri => new URL(uri).origin`.
+     *
+     * May return a promise. It is called for every request, including requests that are served from the cache, so it should be cheap.
+     * When it throws or rejects, the request (or {@link CachingTokenSupplier#invalidate}) fails.
      */
-    uriKey?: (uri: string) => string;
+    uriKey?: (uri: string) => string | Promise<string>;
 
     /**
      * The scope the cached tokens belong to (e.g. the identity of the signed-in user, `currentUser?.sub`).
@@ -49,8 +52,9 @@ export type CachingTokenSupplier = AuthenticationTokenSupplier & {
      * @param token - The rejected token. When given, only a cached token that is still this token is removed,
      *   so a token that was obtained in the meantime (e.g. by a concurrent request) is kept.
      *   When omitted, the cached tokens for the URI are removed for every scope.
+     * @returns A promise that resolves once the token is removed (after {@link CachingTokenSupplierOptions#uriKey} is resolved)
      */
-    invalidate(uri: string, token?: string): void;
+    invalidate(uri: string, token?: string): Promise<void>;
     /**
      * Removes all cached tokens, for every scope
      *
@@ -142,9 +146,9 @@ export default function createCachingTokenSupplier(supplier: AuthenticationToken
         }
     }
 
-    function createEntry(cacheKey: string, uri: string, fetch: typeof globalThis.fetch): CacheEntry {
+    function createEntry(cacheKey: string, entryUriKey: string, uri: string, fetch: typeof globalThis.fetch): CacheEntry {
         const entry: CacheEntry = {
-            uriKey: uriKey(uri),
+            uriKey: entryUriKey,
             // Shared between requests, so it doesn't get the signal of a single request
             token: supplier(uri, { fetch }),
             settled: false,
@@ -184,23 +188,23 @@ export default function createCachingTokenSupplier(supplier: AuthenticationToken
     }
 
     const cachingSupplier: AuthenticationTokenSupplier = async (uri, opts) => {
-        const scope = await scopeResolver.resolve();
+        const [scope, requestUriKey] = await Promise.all([scopeResolver.resolve(), uriKey(uri)]);
         opts.signal?.throwIfAborted();
 
         // JSON, so a scope and URI key containing the same separator can't map to the same cache key
-        const cacheKey = JSON.stringify([scope ?? null, uriKey(uri)]);
+        const cacheKey = JSON.stringify([scope ?? null, requestUriKey]);
         let entry = entries.get(cacheKey);
         if(entry !== undefined && !isUsable(entry)) {
             remove(cacheKey, entry);
             entry = undefined;
         }
-        entry ??= createEntry(cacheKey, uri, opts.fetch);
+        entry ??= createEntry(cacheKey, requestUriKey, uri, opts.fetch);
         return waitFor(cacheKey, entry, opts.signal);
     };
 
     return Object.assign(cachingSupplier, {
-        invalidate(uri: string, token?: string) {
-            const invalidatedUriKey = uriKey(uri);
+        async invalidate(uri: string, token?: string) {
+            const invalidatedUriKey = await uriKey(uri);
             for(const [cacheKey, entry] of entries) {
                 if(entry.uriKey !== invalidatedUriKey) {
                     continue;

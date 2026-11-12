@@ -11,6 +11,15 @@ function cacheKey(uri: string, scope: string | null = null) {
     return JSON.stringify([scope, uri]);
 }
 
+/**
+ * Lets pending requests resolve their scope and URI key, so they reach the wrapped token supplier
+ */
+async function resolvePendingRequests() {
+    for(let i = 0; i < 10; i++) {
+        await Promise.resolve();
+    }
+}
+
 const supplierOpts = {
     fetch: jest.fn()
 }
@@ -132,6 +141,25 @@ test("combines the scope and the URI key", async () => {
     expect(supplier).toHaveBeenCalledTimes(2);
 })
 
+test("supports a URI key that is resolved asynchronously", async () => {
+    const supplier = sequentialSupplier(tokenExpiringIn("token-1", 300_000), tokenExpiringIn("token-2", 300_000));
+    const cachingSupplier = createCachingTokenSupplier(supplier, { uriKey: async uri => new URL(uri).origin });
+
+    expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-1");
+    expect((await cachingSupplier(OTHER_RESOURCE, supplierOpts))?.token).toEqual("token-1");
+
+    await cachingSupplier.invalidate(OTHER_RESOURCE);
+    expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-2");
+})
+
+test("fails the request when the URI key rejects", async () => {
+    const supplier = sequentialSupplier(tokenExpiringIn("token-1", 300_000));
+    const cachingSupplier = createCachingTokenSupplier(supplier, { uriKey: () => Promise.reject(new Error("no key")) });
+
+    await expect(cachingSupplier(RESOURCE, supplierOpts)).rejects.toThrow("no key");
+    expect(supplier).not.toHaveBeenCalled();
+})
+
 test("a scope and URI key containing a separator don't share a token", async () => {
     let scope = "a|b";
     const supplier = jest.fn<Promise<AuthenticationToken | null>, Parameters<AuthenticationTokenSupplier>>(async () => tokenExpiringIn(`token for ${scope}`, 300_000));
@@ -186,7 +214,7 @@ test("invalidate() removes the cached token for a URI", async () => {
 
     await cachingSupplier(RESOURCE, supplierOpts);
     await cachingSupplier(OTHER_RESOURCE, supplierOpts);
-    cachingSupplier.invalidate(RESOURCE);
+    await cachingSupplier.invalidate(RESOURCE);
 
     expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-3");
     expect((await cachingSupplier(OTHER_RESOURCE, supplierOpts))?.token).toEqual("token-2");
@@ -198,9 +226,9 @@ test("invalidate() with the rejected token keeps a token obtained in the meantim
 
     await cachingSupplier(RESOURCE, supplierOpts);
     // Two requests with token-1 are rejected; the first invalidation leads to token-2
-    cachingSupplier.invalidate(RESOURCE, "token-1");
+    await cachingSupplier.invalidate(RESOURCE, "token-1");
     expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-2");
-    cachingSupplier.invalidate(RESOURCE, "token-1");
+    await cachingSupplier.invalidate(RESOURCE, "token-1");
 
     expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-2");
     expect(supplier).toHaveBeenCalledTimes(2);
@@ -215,10 +243,10 @@ test("invalidate() with a rejected token keeps a token that is still being obtai
     const cachingSupplier = createCachingTokenSupplier(supplier);
 
     await cachingSupplier(RESOURCE, supplierOpts);
-    cachingSupplier.invalidate(RESOURCE, "token-1");
+    await cachingSupplier.invalidate(RESOURCE, "token-1");
     const pending = cachingSupplier(RESOURCE, supplierOpts);
-    await Promise.resolve();
-    cachingSupplier.invalidate(RESOURCE, "token-1");
+    await resolvePendingRequests();
+    await cachingSupplier.invalidate(RESOURCE, "token-1");
     resolveToken(tokenExpiringIn("token-2", 300_000));
 
     expect((await pending)?.token).toEqual("token-2");
@@ -245,7 +273,7 @@ test("invalidate() removes the cached tokens for a URI of every scope", async ()
     await cachingSupplier(RESOURCE, supplierOpts);
     user = "user-2";
     await cachingSupplier(RESOURCE, supplierOpts);
-    cachingSupplier.invalidate(RESOURCE);
+    await cachingSupplier.invalidate(RESOURCE);
 
     await cachingSupplier(RESOURCE, supplierOpts);
     user = "user-1";
@@ -261,7 +289,7 @@ test("invalidate() with the rejected token only removes that token", async () =>
     await cachingSupplier(RESOURCE, supplierOpts);
     user = "user-2";
     await cachingSupplier(RESOURCE, supplierOpts);
-    cachingSupplier.invalidate(RESOURCE, "token for user-2");
+    await cachingSupplier.invalidate(RESOURCE, "token for user-2");
 
     user = "user-1";
     expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token for user-1");
@@ -276,7 +304,7 @@ test("invalidate() for a URI without cached token does nothing", async () => {
     const cachingSupplier = createCachingTokenSupplier(supplier);
 
     await cachingSupplier(RESOURCE, supplierOpts);
-    cachingSupplier.invalidate(OTHER_RESOURCE, "token-1");
+    await cachingSupplier.invalidate(OTHER_RESOURCE, "token-1");
 
     expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-1");
     expect(supplier).toHaveBeenCalledTimes(1);
@@ -328,7 +356,7 @@ test("an aborted request stops waiting without failing other requests", async ()
 
     const aborted = cachingSupplier(RESOURCE, { ...supplierOpts, signal: abortController.signal });
     const other = cachingSupplier(RESOURCE, supplierOpts);
-    await Promise.resolve(); // Let both requests resolve their scope
+    await resolvePendingRequests();
 
     abortController.abort(new Error("aborted"));
     await expect(aborted).rejects.toThrow("aborted");
@@ -346,7 +374,7 @@ test("a new request does not wait for a call that an aborted request was waiting
     const abortController = new AbortController();
 
     const aborted = cachingSupplier(RESOURCE, { ...supplierOpts, signal: abortController.signal });
-    await Promise.resolve(); // Let the request resolve its scope
+    await resolvePendingRequests();
     abortController.abort(new Error("aborted"));
     await expect(aborted).rejects.toThrow("aborted");
 
@@ -457,7 +485,7 @@ describe("expiry timers", () => {
         await cachingSupplier(OTHER_RESOURCE, supplierOpts);
         expect(jest.getTimerCount()).toBe(2);
 
-        cachingSupplier.invalidate(RESOURCE);
+        await cachingSupplier.invalidate(RESOURCE);
         expect(jest.getTimerCount()).toBe(1);
 
         cachingSupplier.clear();

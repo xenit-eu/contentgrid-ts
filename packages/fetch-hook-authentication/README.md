@@ -41,7 +41,7 @@ Browsers can delay timers (e.g. in background tabs), so the expiry is also check
 
 | Option         | Default                | Description                                                                                       |
 |----------------|------------------------|---------------------------------------------------------------------------------------------------|
-| `uriKey`       | the full request URI   | Maps a request URI to a key; requests with the same key (and scope) share a token (e.g. `uri => new URL(uri).origin`) |
+| `uriKey`       | the full request URI   | Maps a request URI to a key, or a promise of one; requests with the same key (and scope) share a token (e.g. `uri => new URL(uri).origin`) |
 | `scope`        | one shared scope       | The scope tokens belong to (e.g. the signed-in user, `() => currentUser?.sub`). Tokens of different scopes are cached separately |
 | `expiryMargin` | `30_000`               | Milliseconds before expiry at which a cached token is no longer handed out                          |
 
@@ -78,5 +78,6 @@ When it rejects, the request fails.
 
 #### Invalidating tokens
 
-Call `invalidate(uri, token)` to drop the token for a URI after it was rejected (e.g. on `401 Unauthorized`). Passing the rejected `token` makes sure a token that was obtained in the meantime (e.g. after a concurrent request was rejected too) is kept. Call `clear()` to drop all cached tokens, for every scope (e.g. on sign-out).
+Call `await invalidate(uri, token)` to drop the token for a URI after it was rejected (e.g. on `401 Unauthorized`). Passing the rejected `token` makes sure a token that was obtained in the meantime (e.g. after a concurrent request was rejected too) is kept. Call `clear()` to drop all cached tokens, for every scope (e.g. on sign-out).
+`invalidate()` returns a promise, because it resolves the `uriKey` of the URI first.
 `invalidate(uri)` without a token drops the tokens for that URI of every scope.
