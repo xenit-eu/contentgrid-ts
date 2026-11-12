@@ -153,16 +153,11 @@ test("calls the supplier when the scope is null or undefined", async () => {
     expect(supplier).toHaveBeenCalledTimes(1);
 })
 
-test("caches a token without expiry until it is invalidated", async () => {
+test("does not cache tokens without expiry", async () => {
     const supplier = sequentialSupplier(tokenExpiringIn("token-1", null), tokenExpiringIn("token-2", null));
     const cachingSupplier = createCachingTokenSupplier(supplier);
 
     expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-1");
-    jest.advanceTimersByTime(365 * 24 * 60 * 60 * 1000);
-    expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-1");
-    expect(supplier).toHaveBeenCalledTimes(1);
-
-    cachingSupplier.invalidate(RESOURCE);
     expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-2");
 })
 
@@ -431,13 +426,13 @@ describe("removing tokens that can no longer be handed out", () => {
         expect(mapDelete).not.toHaveBeenCalledWith(cacheKey(RESOURCE, "user-2"));
     })
 
-    test("keeps a token without expiry without a timer", async () => {
+    test("does not keep a token without expiry", async () => {
         const supplier = sequentialSupplier(tokenExpiringIn("token-1", null));
         const cachingSupplier = createCachingTokenSupplier(supplier);
 
         await cachingSupplier(RESOURCE, supplierOpts);
 
-        expect(mapDelete).not.toHaveBeenCalledWith(cacheKey(RESOURCE));
+        expect(mapDelete).toHaveBeenCalledWith(cacheKey(RESOURCE));
         expect(jest.getTimerCount()).toBe(0);
     })
 

@@ -81,9 +81,9 @@ const DEFAULT_EXPIRY_MARGIN = 30_000;
  * - A cached token is reused for requests with the same {@link CachingTokenSupplierOptions#uriKey} and {@link CachingTokenSupplierOptions#scope},
  *   until it is within {@link CachingTokenSupplierOptions#expiryMargin} of its expiry; the next request then obtains a new token.
  *   A token that is valid for less than `expiryMargin` is therefore handed out once, but never reused.
- * - A token without expiry is cached until it is invalidated or the cache is cleared.
- * - Tokens with an invalid expiry (e.g. from a non-numeric `expires_in`), `null` tokens and failures are not cached.
- * - A cached token with an expiry is removed from memory by a timer once it can no longer be handed out, so the cache does not grow over a long session.
+ * - Tokens without (valid) expiry, `null` tokens and failures are not cached.
+ *   A missing expiry means the expiry is unknown, not that the token never expires (RFC 6749, section 5.1).
+ * - A cached token is removed from memory by a timer once it can no longer be handed out, so the cache does not grow over a long session.
  *   Timers are not exact (e.g. browsers delay them in background tabs), so the expiry is checked again whenever a cached token is requested.
  * - Concurrent requests for the same key share a single call to the wrapped token supplier.
  *   That call is not aborted when a request is aborted: the aborted request only stops waiting for it.
@@ -99,17 +99,11 @@ export default function createCachingTokenSupplier(supplier: AuthenticationToken
     const entries = new Map<string, CacheEntry>();
 
     /**
-     * Milliseconds until a settled entry's token can no longer be handed out:
-     * `Infinity` for a token without expiry, and `0` or less for a token that can't be cached (`null`, or with an invalid expiry)
+     * Milliseconds until a settled entry's token can no longer be handed out,
+     * or `0` for a token that can't be cached (`null`, or without (valid) expiry)
      */
     function remainingTime(entry: CacheEntry): number {
-        if(entry.value === null) {
-            return 0;
-        }
-        if(entry.value.expiresAt === null) {
-            return Infinity;
-        }
-        const expiresAt = entry.value.expiresAt.getTime();
+        const expiresAt = entry.value?.expiresAt?.getTime() ?? NaN;
         return isNaN(expiresAt) ? 0 : expiresAt - expiryMargin - Date.now();
     }
 
@@ -132,9 +126,6 @@ export default function createCachingTokenSupplier(supplier: AuthenticationToken
         if(remaining <= 0) {
             remove(cacheKey, entry); // Not cacheable, or already too close to its expiry
             return;
-        }
-        if(remaining === Infinity) {
-            return; // Never expires: kept until it is invalidated or the cache is cleared
         }
         entry.timer = setTimeout(() => remove(cacheKey, entry), remaining);
         // Don't keep a Node.js process alive just to clean up the cache
