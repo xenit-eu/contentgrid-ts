@@ -3,7 +3,7 @@ import { AuthenticationToken, AuthenticationTokenSupplier } from "./types";
 
 export interface CachingTokenSupplierOptions {
     /**
-     * Determines which requests share a cached token: requests for URIs that map to the same key use the same token.
+     * Determines which URIs share a cached token: requests for URIs that map to the same key (within the same {@link CachingTokenSupplierOptions#scope}) use the same token.
      *
      * Defaults to the full URI, so a token is only reused for exactly the resource it was obtained for.
      * This is the safe choice for the ContentGrid token exchange, where the decision to issue a token can depend on the exact resource (path and query).
@@ -11,13 +11,14 @@ export interface CachingTokenSupplierOptions {
      *
      * To reuse a token for all URIs on the same origin, use `uri => new URL(uri).origin`.
      */
-    key?: (uri: string) => string;
+    uriKey?: (uri: string) => string;
 
     /**
-     * The scope the cached tokens belong to (e.g. the identity of the signed-in user).
+     * The scope the cached tokens belong to (e.g. the identity of the signed-in user, `currentUser?.sub`).
      *
-     * A token cached for one scope is never handed out for another scope.
-     * When the scope resolves to `null` (e.g. nobody is signed in), all cached tokens are removed, no token is obtained and `null` is returned.
+     * The scope is part of the cache key, so a token cached for one scope is never handed out for another scope.
+     * Tokens cached for a previous scope are not removed when the scope changes; they are removed once they expire.
+     * Call {@link CachingTokenSupplier#clear} to remove them immediately (e.g. on sign-out).
      *
      * The scope is resolved for every request, including requests that are served from the cache,
      * so it should be cheap (e.g. read the current user from memory, not from a network call).
@@ -25,7 +26,7 @@ export interface CachingTokenSupplierOptions {
      *
      * Defaults to a single, shared scope.
      */
-    scope?: ValueProvider<string | null, []>;
+    scope?: ValueProvider<string | null | undefined, []>;
 
     /**
      * Time (in milliseconds) before its expiry at which a cached token is no longer handed out, so it does not expire in flight.
@@ -45,18 +46,24 @@ export type CachingTokenSupplier = AuthenticationTokenSupplier & {
      * Use this when the token was rejected by the resource (e.g. a `401 Unauthorized` response).
      *
      * @param uri - The URI the token was used for
-     * @param token - The rejected token. When given, the cached token is only removed if it is still this token,
+     * @param token - The rejected token. When given, only a cached token that is still this token is removed,
      *   so a token that was obtained in the meantime (e.g. by a concurrent request) is kept.
+     *   When omitted, the cached tokens for the URI are removed for every scope.
      */
     invalidate(uri: string, token?: string): void;
     /**
-     * Removes all cached tokens
+     * Removes all cached tokens, for every scope
+     *
+     * Call this when the signed-in user signs out or changes, so their tokens don't stay in memory until they expire.
      */
     clear(): void;
 };
 
 interface CacheEntry {
-    readonly scope: string;
+    /**
+     * The key of the URI the token was obtained for, without the scope
+     */
+    readonly uriKey: string;
     readonly token: Promise<AuthenticationToken | null>;
     settled: boolean;
     value: AuthenticationToken | null;
@@ -67,35 +74,17 @@ interface CacheEntry {
 }
 
 const DEFAULT_EXPIRY_MARGIN = 30_000;
-const DEFAULT_SCOPE = "";
-
-/**
- * The reason a signal was aborted with.
- *
- * Browsers without `AbortSignal#reason` (e.g. Safari < 15.4) get a generic `AbortError` instead.
- */
-function abortReason(signal: AbortSignal): unknown {
-    return signal.reason ?? new DOMException("The operation was aborted.", "AbortError");
-}
-
-/**
- * The expiry of a token, or `null` when it has none, or an invalid one (e.g. from a non-numeric `expires_in`)
- */
-function expiryOf(token: AuthenticationToken | null): Date | null {
-    const expiresAt = token?.expiresAt ?? null;
-    return expiresAt !== null && !isNaN(expiresAt.getTime()) ? expiresAt : null;
-}
 
 /**
  * Creates a token supplier that keeps the tokens supplied by another token supplier in memory, until they are about to expire.
  *
- * - A cached token is reused for requests with the same {@link CachingTokenSupplierOptions#key} and {@link CachingTokenSupplierOptions#scope},
+ * - A cached token is reused for requests with the same {@link CachingTokenSupplierOptions#uriKey} and {@link CachingTokenSupplierOptions#scope},
  *   until it is within {@link CachingTokenSupplierOptions#expiryMargin} of its expiry; the next request then obtains a new token.
  *   A token that is valid for less than `expiryMargin` is therefore handed out once, but never reused.
- * - Tokens without (valid) expiry and failures are not cached.
- * - A cached token is removed from memory by a timer once it can no longer be handed out, so the cache does not grow over a long session.
+ * - A token without expiry is cached until it is invalidated or the cache is cleared.
+ * - Tokens with an invalid expiry (e.g. from a non-numeric `expires_in`), `null` tokens and failures are not cached.
+ * - A cached token with an expiry is removed from memory by a timer once it can no longer be handed out, so the cache does not grow over a long session.
  *   Timers are not exact (e.g. browsers delay them in background tabs), so the expiry is checked again whenever a cached token is requested.
- * - A token cached for another scope is never handed out; it is replaced when its key is requested, or removed by its timer.
  * - Concurrent requests for the same key share a single call to the wrapped token supplier.
  *   That call is not aborted when a request is aborted: the aborted request only stops waiting for it.
  *   The call is then no longer shared with new requests, so a call that never completes does not block its key.
@@ -104,28 +93,31 @@ function expiryOf(token: AuthenticationToken | null): Date | null {
  * @param options - Caching options
  */
 export default function createCachingTokenSupplier(supplier: AuthenticationTokenSupplier, options: CachingTokenSupplierOptions = {}): CachingTokenSupplier {
-    const key = options.key ?? (uri => uri);
-    const scopeResolver = ValueProviderResolver.fromValueProvider(options.scope ?? DEFAULT_SCOPE);
+    const uriKey = options.uriKey ?? (uri => uri);
+    const scopeResolver = ValueProviderResolver.fromValueProvider(options.scope);
     const expiryMargin = options.expiryMargin ?? DEFAULT_EXPIRY_MARGIN;
     const entries = new Map<string, CacheEntry>();
 
     /**
-     * Milliseconds until a settled entry's token can no longer be handed out, or `null` when it has no (valid) expiry
+     * Milliseconds until a settled entry's token can no longer be handed out:
+     * `Infinity` for a token without expiry, and `0` or less for a token that can't be cached (`null`, or with an invalid expiry)
      */
-    function remainingTime(entry: CacheEntry): number | null {
-        const expiresAt = expiryOf(entry.value);
-        return expiresAt === null ? null : expiresAt.getTime() - expiryMargin - Date.now();
+    function remainingTime(entry: CacheEntry): number {
+        if(entry.value === null) {
+            return 0;
+        }
+        if(entry.value.expiresAt === null) {
+            return Infinity;
+        }
+        const expiresAt = entry.value.expiresAt.getTime();
+        return isNaN(expiresAt) ? 0 : expiresAt - expiryMargin - Date.now();
     }
 
-    function isUsable(entry: CacheEntry, scope: string): boolean {
-        if(entry.scope !== scope) {
-            return false;
-        }
+    function isUsable(entry: CacheEntry): boolean {
         if(!entry.settled) {
             return true; // Still in flight, share it
         }
-        const remaining = remainingTime(entry);
-        return remaining !== null && remaining > 0;
+        return remainingTime(entry) > 0;
     }
 
     function remove(cacheKey: string, entry: CacheEntry) {
@@ -137,9 +129,12 @@ export default function createCachingTokenSupplier(supplier: AuthenticationToken
 
     function scheduleRemoval(cacheKey: string, entry: CacheEntry) {
         const remaining = remainingTime(entry);
-        if(remaining === null || remaining <= 0) {
+        if(remaining <= 0) {
             remove(cacheKey, entry); // Not cacheable, or already too close to its expiry
             return;
+        }
+        if(remaining === Infinity) {
+            return; // Never expires: kept until it is invalidated or the cache is cleared
         }
         entry.timer = setTimeout(() => remove(cacheKey, entry), remaining);
         // Don't keep a Node.js process alive just to clean up the cache
@@ -156,9 +151,9 @@ export default function createCachingTokenSupplier(supplier: AuthenticationToken
         }
     }
 
-    function createEntry(cacheKey: string, uri: string, scope: string, fetch: typeof globalThis.fetch): CacheEntry {
+    function createEntry(cacheKey: string, uri: string, fetch: typeof globalThis.fetch): CacheEntry {
         const entry: CacheEntry = {
-            scope,
+            uriKey: uriKey(uri),
             // Shared between requests, so it doesn't get the signal of a single request
             token: supplier(uri, { fetch }),
             settled: false,
@@ -188,7 +183,7 @@ export default function createCachingTokenSupplier(supplier: AuthenticationToken
                     // Don't share a call that may never complete with new requests; they start a new call instead
                     remove(cacheKey, entry);
                 }
-                reject(abortReason(signal));
+                reject(signal.reason);
             };
             signal.addEventListener("abort", onAbort, { once: true });
             entry.token
@@ -199,35 +194,30 @@ export default function createCachingTokenSupplier(supplier: AuthenticationToken
 
     const cachingSupplier: AuthenticationTokenSupplier = async (uri, opts) => {
         const scope = await scopeResolver.resolve();
-        if(scope === null) {
-            removeAll();
-            return null;
-        }
-        // Not AbortSignal#throwIfAborted(), which is not available in all supported browsers
-        if(opts.signal?.aborted) {
-            throw abortReason(opts.signal);
-        }
+        opts.signal?.throwIfAborted();
 
-        const cacheKey = key(uri);
+        // JSON, so a scope and URI key containing the same separator can't map to the same cache key
+        const cacheKey = JSON.stringify([scope ?? null, uriKey(uri)]);
         let entry = entries.get(cacheKey);
-        if(entry !== undefined && !isUsable(entry, scope)) {
+        if(entry !== undefined && !isUsable(entry)) {
             remove(cacheKey, entry);
             entry = undefined;
         }
-        entry ??= createEntry(cacheKey, uri, scope, opts.fetch);
+        entry ??= createEntry(cacheKey, uri, opts.fetch);
         return waitFor(cacheKey, entry, opts.signal);
     };
 
     return Object.assign(cachingSupplier, {
         invalidate(uri: string, token?: string) {
-            const cacheKey = key(uri);
-            const entry = entries.get(cacheKey);
-            if(!entry) {
-                return;
-            }
-            // An entry that is still in flight was created after the rejected token was handed out
-            if(token === undefined || (entry.settled && entry.value?.token === token)) {
-                remove(cacheKey, entry);
+            const invalidatedUriKey = uriKey(uri);
+            for(const [cacheKey, entry] of entries) {
+                if(entry.uriKey !== invalidatedUriKey) {
+                    continue;
+                }
+                // An entry that is still in flight was created after the rejected token was handed out
+                if(token === undefined || (entry.settled && entry.value?.token === token)) {
+                    remove(cacheKey, entry);
+                }
             }
         },
         clear() {

@@ -4,6 +4,13 @@ import { AuthenticationToken, AuthenticationTokenSupplier } from "../../src/toke
 const RESOURCE = "https://extension.example/resource?id=1";
 const OTHER_RESOURCE = "https://extension.example/other";
 
+/**
+ * The cache key of a token for a URI (the scope is part of it)
+ */
+function cacheKey(uri: string, scope: string | null = null) {
+    return JSON.stringify([scope, uri]);
+}
+
 const supplierOpts = {
     fetch: jest.fn()
 }
@@ -67,9 +74,9 @@ test("caches a separate token per URI by default", async () => {
     expect(supplier).toHaveBeenCalledTimes(2);
 })
 
-test("shares a token between URIs with the same key", async () => {
+test("shares a token between URIs with the same URI key", async () => {
     const supplier = sequentialSupplier(tokenExpiringIn("origin-token", 300_000));
-    const cachingSupplier = createCachingTokenSupplier(supplier, { key: uri => new URL(uri).origin });
+    const cachingSupplier = createCachingTokenSupplier(supplier, { uriKey: uri => new URL(uri).origin });
 
     expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("origin-token");
     expect((await cachingSupplier(OTHER_RESOURCE, supplierOpts))?.token).toEqual("origin-token");
@@ -99,19 +106,63 @@ test("does not reuse a token cached for another scope", async () => {
     expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token for user-2");
 })
 
-test("returns null without calling the supplier when the scope is null", async () => {
-    const supplier = sequentialSupplier();
-    const cachingSupplier = createCachingTokenSupplier(supplier, { scope: () => null });
+test("keeps the tokens of every scope", async () => {
+    let user = "user-1";
+    const supplier = jest.fn<Promise<AuthenticationToken | null>, Parameters<AuthenticationTokenSupplier>>(async () => tokenExpiringIn(`token for ${user}`, 300_000));
+    const cachingSupplier = createCachingTokenSupplier(supplier, { scope: () => user });
 
-    expect(await cachingSupplier(RESOURCE, supplierOpts)).toBeNull();
-    expect(supplier).not.toHaveBeenCalled();
+    await cachingSupplier(RESOURCE, supplierOpts);
+    user = "user-2";
+    await cachingSupplier(RESOURCE, supplierOpts);
+    user = "user-1";
+
+    expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token for user-1");
+    expect(supplier).toHaveBeenCalledTimes(2);
 })
 
-test("does not cache tokens without expiry", async () => {
+test("combines the scope and the URI key", async () => {
+    let user = "user-1";
+    const supplier = jest.fn<Promise<AuthenticationToken | null>, Parameters<AuthenticationTokenSupplier>>(async () => tokenExpiringIn(`token for ${user}`, 300_000));
+    const cachingSupplier = createCachingTokenSupplier(supplier, { uriKey: uri => new URL(uri).origin, scope: () => user });
+
+    await cachingSupplier(RESOURCE, supplierOpts);
+    expect((await cachingSupplier(OTHER_RESOURCE, supplierOpts))?.token).toEqual("token for user-1");
+    user = "user-2";
+    expect((await cachingSupplier(OTHER_RESOURCE, supplierOpts))?.token).toEqual("token for user-2");
+    expect(supplier).toHaveBeenCalledTimes(2);
+})
+
+test("a scope and URI key containing a separator don't share a token", async () => {
+    let scope = "a|b";
+    const supplier = jest.fn<Promise<AuthenticationToken | null>, Parameters<AuthenticationTokenSupplier>>(async () => tokenExpiringIn(`token for ${scope}`, 300_000));
+    const cachingSupplier = createCachingTokenSupplier(supplier, { uriKey: uri => uri === RESOURCE ? "c" : "b|c", scope: () => scope });
+
+    await cachingSupplier(RESOURCE, supplierOpts);
+    scope = "a";
+    expect((await cachingSupplier(OTHER_RESOURCE, supplierOpts))?.token).toEqual("token for a");
+})
+
+test("calls the supplier when the scope is null or undefined", async () => {
+    let user: string | null | undefined = null;
+    const supplier = sequentialSupplier(tokenExpiringIn("token-1", 300_000));
+    const cachingSupplier = createCachingTokenSupplier(supplier, { scope: () => user });
+
+    expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-1");
+    user = undefined;
+    expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-1");
+    expect(supplier).toHaveBeenCalledTimes(1);
+})
+
+test("caches a token without expiry until it is invalidated", async () => {
     const supplier = sequentialSupplier(tokenExpiringIn("token-1", null), tokenExpiringIn("token-2", null));
     const cachingSupplier = createCachingTokenSupplier(supplier);
 
     expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-1");
+    jest.advanceTimersByTime(365 * 24 * 60 * 60 * 1000);
+    expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-1");
+    expect(supplier).toHaveBeenCalledTimes(1);
+
+    cachingSupplier.invalidate(RESOURCE);
     expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-2");
 })
 
@@ -191,6 +242,40 @@ test("does not cache a token with an invalid expiry", async () => {
     expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-2");
 })
 
+test("invalidate() removes the cached tokens for a URI of every scope", async () => {
+    let user = "user-1";
+    const supplier = jest.fn<Promise<AuthenticationToken | null>, Parameters<AuthenticationTokenSupplier>>(async () => tokenExpiringIn(`token for ${user}`, 300_000));
+    const cachingSupplier = createCachingTokenSupplier(supplier, { scope: () => user });
+
+    await cachingSupplier(RESOURCE, supplierOpts);
+    user = "user-2";
+    await cachingSupplier(RESOURCE, supplierOpts);
+    cachingSupplier.invalidate(RESOURCE);
+
+    await cachingSupplier(RESOURCE, supplierOpts);
+    user = "user-1";
+    await cachingSupplier(RESOURCE, supplierOpts);
+    expect(supplier).toHaveBeenCalledTimes(4);
+})
+
+test("invalidate() with the rejected token only removes that token", async () => {
+    let user = "user-1";
+    const supplier = jest.fn<Promise<AuthenticationToken | null>, Parameters<AuthenticationTokenSupplier>>(async () => tokenExpiringIn(`token for ${user}`, 300_000));
+    const cachingSupplier = createCachingTokenSupplier(supplier, { scope: () => user });
+
+    await cachingSupplier(RESOURCE, supplierOpts);
+    user = "user-2";
+    await cachingSupplier(RESOURCE, supplierOpts);
+    cachingSupplier.invalidate(RESOURCE, "token for user-2");
+
+    user = "user-1";
+    expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token for user-1");
+    expect(supplier).toHaveBeenCalledTimes(2);
+    user = "user-2";
+    await cachingSupplier(RESOURCE, supplierOpts);
+    expect(supplier).toHaveBeenCalledTimes(3);
+})
+
 test("invalidate() for a URI without cached token does nothing", async () => {
     const supplier = sequentialSupplier(tokenExpiringIn("token-1", 300_000));
     const cachingSupplier = createCachingTokenSupplier(supplier);
@@ -210,6 +295,23 @@ test("clear() removes all cached tokens", async () => {
     cachingSupplier.clear();
 
     expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-2");
+})
+
+test("clear() removes the cached tokens of every scope", async () => {
+    let user = "user-1";
+    const supplier = jest.fn<Promise<AuthenticationToken | null>, Parameters<AuthenticationTokenSupplier>>(async () => tokenExpiringIn(`token for ${user}`, 300_000));
+    const cachingSupplier = createCachingTokenSupplier(supplier, { scope: () => user });
+
+    await cachingSupplier(RESOURCE, supplierOpts);
+    user = "user-2";
+    await cachingSupplier(RESOURCE, supplierOpts);
+    cachingSupplier.clear();
+
+    await cachingSupplier(RESOURCE, supplierOpts);
+    user = "user-1";
+    await cachingSupplier(RESOURCE, supplierOpts);
+    expect(supplier).toHaveBeenCalledTimes(4);
+    expect(jest.getTimerCount()).toBe(2);
 })
 
 test("does not pass a request signal to the shared call", async () => {
@@ -308,49 +410,34 @@ describe("removing tokens that can no longer be handed out", () => {
         expect(jest.getTimerCount()).toBe(1);
 
         jest.advanceTimersByTime(60_000 - 30_000 - 1);
-        expect(mapDelete).not.toHaveBeenCalledWith(RESOURCE);
+        expect(mapDelete).not.toHaveBeenCalledWith(cacheKey(RESOURCE));
 
         jest.advanceTimersByTime(1);
-        expect(mapDelete).toHaveBeenCalledWith(RESOURCE);
+        expect(mapDelete).toHaveBeenCalledWith(cacheKey(RESOURCE));
         expect(jest.getTimerCount()).toBe(0);
     })
 
-    test("removes a token cached for another scope when its timer fires", async () => {
+    test("removes a token cached for a previous scope when its timer fires", async () => {
         let user = "user-1";
         const supplier = sequentialSupplier(tokenExpiringIn("token-1", 60_000), tokenExpiringIn("token-2", 300_000));
         const cachingSupplier = createCachingTokenSupplier(supplier, { scope: () => user });
 
         await cachingSupplier(RESOURCE, supplierOpts);
         user = "user-2";
-        await cachingSupplier(OTHER_RESOURCE, supplierOpts);
+        await cachingSupplier(RESOURCE, supplierOpts);
         jest.advanceTimersByTime(30_000);
 
-        expect(mapDelete).toHaveBeenCalledWith(RESOURCE);
-        expect(mapDelete).not.toHaveBeenCalledWith(OTHER_RESOURCE);
+        expect(mapDelete).toHaveBeenCalledWith(cacheKey(RESOURCE, "user-1"));
+        expect(mapDelete).not.toHaveBeenCalledWith(cacheKey(RESOURCE, "user-2"));
     })
 
-    test("removes all tokens and their timers when the scope becomes null", async () => {
-        let user: string | null = "user-1";
-        const supplier = sequentialSupplier(tokenExpiringIn("token-1", 300_000), tokenExpiringIn("token-2", 300_000));
-        const cachingSupplier = createCachingTokenSupplier(supplier, { scope: () => user });
-
-        await cachingSupplier(RESOURCE, supplierOpts);
-        await cachingSupplier(OTHER_RESOURCE, supplierOpts);
-        user = null;
-        expect(await cachingSupplier(RESOURCE, supplierOpts)).toBeNull();
-
-        expect(mapDelete).toHaveBeenCalledWith(RESOURCE);
-        expect(mapDelete).toHaveBeenCalledWith(OTHER_RESOURCE);
-        expect(jest.getTimerCount()).toBe(0);
-    })
-
-    test("does not keep a token without expiry", async () => {
+    test("keeps a token without expiry without a timer", async () => {
         const supplier = sequentialSupplier(tokenExpiringIn("token-1", null));
         const cachingSupplier = createCachingTokenSupplier(supplier);
 
         await cachingSupplier(RESOURCE, supplierOpts);
 
-        expect(mapDelete).toHaveBeenCalledWith(RESOURCE);
+        expect(mapDelete).not.toHaveBeenCalledWith(cacheKey(RESOURCE));
         expect(jest.getTimerCount()).toBe(0);
     })
 
@@ -360,7 +447,7 @@ describe("removing tokens that can no longer be handed out", () => {
 
         expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-1");
 
-        expect(mapDelete).toHaveBeenCalledWith(RESOURCE);
+        expect(mapDelete).toHaveBeenCalledWith(cacheKey(RESOURCE));
         expect(jest.getTimerCount()).toBe(0);
         expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-2");
     })
@@ -380,18 +467,6 @@ describe("expiry timers", () => {
 
         cachingSupplier.clear();
         expect(jest.getTimerCount()).toBe(0);
-    })
-
-    test("replacing a token for another scope stops the timer of the old token", async () => {
-        let user = "user-1";
-        const supplier = sequentialSupplier(tokenExpiringIn("token-1", 300_000), tokenExpiringIn("token-2", 300_000));
-        const cachingSupplier = createCachingTokenSupplier(supplier, { scope: () => user });
-
-        await cachingSupplier(RESOURCE, supplierOpts);
-        user = "user-2";
-        expect((await cachingSupplier(RESOURCE, supplierOpts))?.token).toEqual("token-2");
-
-        expect(jest.getTimerCount()).toBe(1);
     })
 
     test("does not hand out an expired token when its timer was delayed", async () => {
@@ -416,34 +491,5 @@ describe("expiry timers", () => {
         expect(unref).toHaveBeenCalledTimes(1);
         cachingSupplier.clear();
         unref.mockRestore();
-    })
-})
-
-describe("browsers without AbortSignal#reason and AbortSignal#throwIfAborted", () => {
-    function legacyAbortSignal(aborted: boolean) {
-        const target = new EventTarget() as EventTarget & { aborted: boolean };
-        target.aborted = aborted;
-        return target as unknown as AbortSignal;
-    }
-
-    test("rejects with an AbortError when already aborted", async () => {
-        const supplier = sequentialSupplier(tokenExpiringIn("token-1", 300_000));
-        const cachingSupplier = createCachingTokenSupplier(supplier);
-
-        await expect(cachingSupplier(RESOURCE, { ...supplierOpts, signal: legacyAbortSignal(true) })).rejects.toMatchObject({ name: "AbortError" });
-        expect(supplier).not.toHaveBeenCalled();
-    })
-
-    test("rejects with an AbortError when aborted while waiting", async () => {
-        const supplier = jest.fn<Promise<AuthenticationToken | null>, Parameters<AuthenticationTokenSupplier>>(() => new Promise(() => {}));
-        const cachingSupplier = createCachingTokenSupplier(supplier);
-        const signal = legacyAbortSignal(false);
-
-        const request = cachingSupplier(RESOURCE, { ...supplierOpts, signal });
-        await Promise.resolve(); // Let the request resolve its scope
-        (signal as unknown as { aborted: boolean }).aborted = true;
-        signal.dispatchEvent(new Event("abort"));
-
-        await expect(request).rejects.toMatchObject({ name: "AbortError" });
     })
 })
