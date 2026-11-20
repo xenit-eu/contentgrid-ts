@@ -5662,7 +5662,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"glob@npm:^14.0.3":
+"glob@npm:^14.0.0, glob@npm:^14.0.3":
   version: 14.0.6
   resolution: "glob@npm:14.0.6"
   dependencies:
@@ -8234,7 +8234,7 @@ __metadata:
     "@rollup/plugin-babel": "npm:^7.0.0"
     "@rollup/plugin-typescript": "npm:^12.0.0"
     "@types/jest": "npm:^30.0.0"
-    glob: "npm:^13.0.0"
+    glob: "npm:^14.0.0"
     jest: "npm:^30.0.0"
     jest-extended: "npm:^7.0.0"
     lerna: "npm:^10.0.0"
